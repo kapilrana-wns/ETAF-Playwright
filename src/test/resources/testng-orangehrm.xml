@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="OrangeHRM Suite" parallel="classes" thread-count="3">
+
+    <listeners>
+        <listener class-name="wns.automation.utilities.TestResultListener"/>
+    </listeners>
+
+    <test name="OrangeHRMTest">
+        <classes>
+            <class name="testscripts.OrangeHRM.OrangeHRMLandingPageTest" />
+            <class name="testscripts.OrangeHRM.OrangeHRMLoginTest" />
+            <class name="testscripts.OrangeHRM.OrangeHRMHomePageTest" />
+            <class name="testscripts.OrangeHRM.OrangeHRMAutoHealDemoTest" />
+        </classes>
+    </test>
+
+</suite>

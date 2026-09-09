@@ -1,0 +1,69 @@
+# Feature Settings
+mobileEmulator=false
+recordVideo=false
+sendMailUponTetsCompletion=false
+AutoLoggingDefect=true
+autoTestResultUpdate=true
+
+# General Properties
+ApplicationUrl=https://skillmatrix.wns.com/
+browser=Chrome
+browserWidth=1380
+browserHeight=1080
+takeScreenShotFor=ScreenShotforBothFailedAndPassedCases
+mobileEmulatorType=
+videoWidth=
+videoHeight=
+
+# Test Result Settings
+testReporter=Extent
+testResultOutputDirectory=./test_result/
+extentResultMainHtmlFileName=Result.html
+testNGReportDir=./test-output/
+allureTestResultOutputDirectory=./allure-results/
+
+# Test Execution
+testExecutionMode=
+remoteURL=http://localhost:4444/
+webDriverTimeDuraiton=10
+testDataDirectory=./src/test/java/testData/
+
+# Mail Configuration
+emailSMTPServer=10.33.193.107
+emailAddress=lokeshsingh.rajawat@wns.com
+
+# Database Settings
+DBMS_TYPE=SQLSERVER
+DBMSServerIP=10.31.5.4\\SQLExpress
+DBMSServerPort=
+DatabaseName=SkillDB_Test
+DBUserName=sa
+DBPassword=ILoveIndia1234$
+
+# Test Management
+TestManagementTool=Jira
+TestManagementToolURL=https://wnstcoe.atlassian.net
+TestManagementToolApiKey=ATATT3xFfGF0Mu8JM6xvpVO3OPnEhvWHpkkZAKLdfrrRNQtK-FnRpGfG00j8iWCmKIxMumGOYecGfYoBwOx8PztYfwT8eVAV_DIGDJr9WxK7hx5sy9X9SuoiKEYEZoZdg9EUR_gerwVDLMVfFMNEjallwXkNjhXjz0nxmTIYST2fqRNecJ71pPg=303F3F10
+TestManagementProjectUserName=lokeshsingh.rajawat@wns.com
+TestManagementProejctKey=
+TestManagementIssueTypeID=
+DefectAssigneeName=Lokesh Singh
+DefectReportedBy=rajkumar.s@wns.com
+
+# Zephyr Configuration
+baseURI=https://prod-api.zephyr4jiracloud.com/connect
+accessKey=NTU1MDhhYzctNmJiNy0zMDY4LWI1ZmMtZWRlNzNiOTBhMGIzIDYzYjY4NmM5MmM3MGFhZTFlNmZiY2EzNyBVU0VSX0RFRkFVTFRfTkFNRQ
+secretKey=c2gZYIBe5nh2PXrCXStjOPlO2QvZOSbREYMupehZxvs
+accountId=63b686c92c70aae1e6fbca37
+projectId=10002
+versionId=10002
+testCycleName=Skill Matrix Demo Execution
+cycleDesc=Description for Skill Matrix Demo Execution
+jqlQuery=project = TCOE AND Key = TCOE-571
+apiToken=ATATT3xFfGF0sZ5XWUwj9VlryOSR3A9SPxFLXwn4DbY31gciaXr4j6IhFRbV3o4sJCOveZeRF8tcJnLPaMMPpwpt7JI6bkpYaagcMWmLmLmOTGGI8MttiHcAcyPChPiAcIDA-a_tC_Cs4rGO8dQ5fiNxkeG0d7egla2v1vf0Vp8b4YagS_a_KuQ=C112B5E7
+
+# Logger Configuration
+logLevel=DEBUG
+logFilePath=
+logFileName=
+

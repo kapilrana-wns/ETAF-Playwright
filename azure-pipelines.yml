@@ -1,0 +1,87 @@
+# Maven
+# Build your Java project and run tests with Apache Maven.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/java
+
+trigger:
+#- main
+ branches:
+    include:
+      - Headlessmode-for-AzureDevOps
+
+# ✅ Schedule: Friday 10 PM IST (16:30 UTC)
+schedules:
+- cron: "30 16 * * 5"
+  displayName: "Friday 10 PM IST Run"
+  branches:
+    include:
+      - main
+  always: true
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  MAVEN_OPTS: '-Xmx1024m'
+
+steps:
+
+# ✅ Checkout repo (explicit for clarity)
+- checkout: self
+  displayName: 'Checkout Automation Repo'
+
+# ✅ Verify Java & Maven
+- script: |
+    java -version
+    mvn -version
+  displayName: 'Verify Java & Maven'
+
+# ✅ Install Chrome
+- powershell: |
+    Write-Host "Installing Chrome..."
+    choco install googlechrome -y
+  displayName: 'Install Chrome'
+
+# ✅ DEBUG: Check full repo structure
+- script: dir /s
+  displayName: 'Check all files in repo'
+
+# ✅ Run Maven with FULL DEBUG (this prints real error)
+- script: mvn clean test -e -X
+  displayName: 'Run Maven with full debug logs'
+  continueOnError: true   # IMPORTANT → allows next steps to run
+
+# ✅ 🔥 PRINT ACTUAL TEST FAILURES (MOST IMPORTANT STEP)
+- script: |
+    echo "================ TEST FAILURE DETAILS ================"
+    if exist target\surefire-reports (
+        for %%f in (target\surefire-reports\*.txt) do (
+            echo "---- %%f ----"
+            type "%%f"
+        )
+    ) else (
+        echo "No surefire-reports folder found"
+    )
+  displayName: 'Print Surefire Failure Logs'
+  continueOnError: true
+
+# ✅ Optional: Print XML results (extra visibility)
+- script: |
+    echo "================ XML RESULTS ================"
+    if exist target\surefire-reports (
+        for %%f in (target\surefire-reports\*.xml) do (
+            echo "---- %%f ----"
+            type "%%f"
+        )
+    )
+  displayName: 'Print XML Test Results'
+  continueOnError: true
+
+# ✅ Publish Test Results (so you see failures in UI)
+- task: PublishTestResults@2
+  inputs:
+    testResultsFormat: 'JUnit'
+    testResultsFiles: '**/surefire-reports/TEST-*.xml'
+    failTaskOnFailedTests: false   # don't stop pipeline
+
+

@@ -1,0 +1,39 @@
+
+For iOS
+
+{
+  "appium:platformName": "iOS",
+  "appium:deviceName": "iPad Pro",
+  "appium:udid": "00008027-000E20213478402E",
+  "appium:automationName": "XCUITest",
+  "appium:wdaLocalPort": "3601",
+  "appium:platformVersion": "15.5"
+}
+
+{
+  "appium:platformName": "iOS",
+  "appium:deviceName": "iPhone 14 Pro",
+  "appium:udid": "00008120-000665D40278C01E",
+  "appium:automationName": "XCUITest",
+  "appium:wdaLocalPort": "3601",
+  "appium:platformVersion": "16.1"
+}
+
+
+For Android: 
+
+{
+  "appium:deviceName": "R5CT602VFQH",
+  "platformName": "Android",
+  "appium:platformVersion": "13",
+  "appium:automationName": "UiAutomator2"
+}
+
+ 
+
+{
+  "appium:deviceName": "ce0218221a288c27047e",
+  "platformName": "Android",
+  "appium:platformVersion": "9",
+  "appium:automationName": "UiAutomator2"
+}

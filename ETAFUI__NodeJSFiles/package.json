@@ -1,0 +1,12 @@
+﻿{
+  "name": "test-config-editor",
+  "version": "1.0.0",
+  "description": "Web-based editor for test.properties configuration file",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

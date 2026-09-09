@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="SkillMatrix RegressionSuite" parallel="classes" thread-count="3">
+    <listeners>
+        <listener class-name="wns.automation.utilities.TestResultListener"/>
+    </listeners>
+
+    <listeners>
+        <listener class-name="wns.automation.utilities.TestResultListener"/>
+    </listeners>
+
+    <!-- Comment out either <test> block to run only one suite -->
+    <test name="SkillMatrixTest">
+        <classes>
+            <class name="testscripts.testMainCategory" />
+            <class name="testscripts.testSubCategory" />
+            <class name="testscripts.testSkills" />
+        </classes>
+    </test>
+
+    <test name="OrangeHRMTest">
+        <classes>
+            <class name="testscripts.OrangeHRM.OrangeHRMLandingPageTest" />
+            <class name="testscripts.OrangeHRM.OrangeHRMLoginTest" />
+            <class name="testscripts.OrangeHRM.OrangeHRMHomePageTest" />
+            <class name="testscripts.OrangeHRM.OrangeHRMAutoHealDemoTest" />
+        </classes>
+    </test>
+
+</suite>

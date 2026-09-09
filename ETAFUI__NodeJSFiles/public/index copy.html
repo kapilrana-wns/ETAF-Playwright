@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Configuration Editor</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .form-container { padding: 40px; }
+        .section { margin-bottom: 40px; animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .section-title { font-size: 1.8em; color: #667eea; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 3px solid #667eea; display: flex; align-items: center; gap: 10px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-weight: 600; color: #333; margin-bottom: 8px; font-size: 0.95em; }
+        .form-group input[type="text"], .form-group input[type="url"], .form-group input[type="email"], .form-group input[type="number"], .form-group input[type="password"], .form-group select, .form-group textarea { padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1em; transition: all 0.3s ease; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        .checkbox-group input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; accent-color: #667eea; }
+        .checkbox-group label { margin: 0; cursor: pointer; }
+        .button-group { display: flex; gap: 15px; justify-content: center; margin-top: 40px; padding-top: 30px; border-top: 2px solid #e0e0e0; }
+        .btn { padding: 15px 40px; font-size: 1.1em; font-weight: 600; border: none; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6); }
+        .btn-secondary { background: #f0f0f0; color: #333; }
+        .btn-secondary:hover { background: #e0e0e0; transform: translateY(-2px); }
+        .success-message, .error-message { padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; animation: slideDown 0.3s ease-out; }
+        .success-message { background: #4caf50; color: white; }
+        .error-message { background: #f44336; color: white; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚙️ Test Configuration Editor</h1>
+            <p>Configure your test automation settings with ease</p>
+        </div>
+        <div class="form-container">
+            <div id="successMessage" class="success-message"></div>
+            <div id="errorMessage" class="error-message"></div>
+            <form id="configForm">
+                <div class="section">
+                    <h2 class="section-title">🚀 Feature Settings</h2>
+                    <div class="form-grid">
+                        <div class="checkbox-group"><input type="checkbox" id="mobileEmulator" name="mobileEmulator"><label for="mobileEmulator">Mobile Emulator</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="recordVideo" name="recordVideo"><label for="recordVideo">Record Video</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="sendMailUponTetsCompletion" name="sendMailUponTetsCompletion"><label for="sendMailUponTetsCompletion">Send Mail Upon Completion</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="AutoLoggingDefect" name="AutoLoggingDefect"><label for="AutoLoggingDefect">Auto Logging Defect</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="autoTestResultUpdate" name="autoTestResultUpdate"><label for="autoTestResultUpdate">Auto Test Result Update</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="enableMethodLogging" name="enableMethodLogging"><label for="enableMethodLogging">Enable Method Logging</label></div>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2 class="section-title">🌐 General Settings</h2>
+                    <div class="form-grid">
+                        <div class="form-group"><label for="ApplicationUrl">Application URL</label><input type="url" id="ApplicationUrl" name="ApplicationUrl"></div>
+                        <div class="form-group"><label for="OrangeHRMUrl">OrangeHRM URL</label><input type="url" id="OrangeHRMUrl" name="OrangeHRMUrl"></div>
+                        <div class="form-group"><label for="browser">Browser</label><select id="browser" name="browser"><option value="Chrome">Chrome</option><option value="Firefox">Firefox</option><option value="Edge">Edge</option><option value="Safari">Safari</option></select></div>
+                        <div class="form-group"><label for="browserWidth">Browser Width (px)</label><input type="number" id="browserWidth" name="browserWidth"></div>
+                        <div class="form-group"><label for="browserHeight">Browser Height (px)</label><input type="number" id="browserHeight" name="browserHeight"></div>
+                        <div class="form-group"><label for="takeScreenShotFor">Screenshot</label><select id="takeScreenShotFor" name="takeScreenShotFor"><option value="NoScreenShot">No Screenshot</option><option value="ScreenShotforFailedCases">Failed Only</option><option value="ScreenShotforPassedCases">Passed Only</option><option value="ScreenShotforBothFailedAndPassedCases">Both</option></select></div>
+                        <div class="form-group"><label for="mobileEmulatorType">Mobile Emulator Type</label><input type="text" id="mobileEmulatorType" name="mobileEmulatorType"></div>
+                        <div class="form-group"><label for="videoWidth">Video Width</label><input type="number" id="videoWidth" name="videoWidth"></div>
+                        <div class="form-group"><label for="videoHeight">Video Height</label><input type="number" id="videoHeight" name="videoHeight"></div>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2 class="section-title">📊 Test Result Settings</h2>
+                    <div class="form-grid">
+                        <div class="form-group"><label for="testReporter">Test Reporter</label><select id="testReporter" name="testReporter"><option value="Extent">Extent</option><option value="Allure">Allure</option></select></div>
+                        <div class="form-group"><label for="testResultOutputDirectory">Result Output Directory</label><input type="text" id="testResultOutputDirectory" name="testResultOutputDirectory"></div>
+                        <div class="form-group"><label for="extentResultMainHtmlFileName">Extent HTML File Name</label><input type="text" id="extentResultMainHtmlFileName" name="extentResultMainHtmlFileName"></div>
+                        <div class="form-group"><label for="testNGReportDir">TestNG Report Dir</label><input type="text" id="testNGReportDir" name="testNGReportDir"></div>
+                        <div class="form-group"><label for="allureTestResultOutputDirectory">Allure Result Dir</label><input type="text" id="allureTestResultOutputDirectory" name="allureTestResultOutputDirectory"></div>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2 class="section-title">▶️ Test Execution</h2>
+                    <div class="form-grid">
+                        <div class="form-group"><label for="testExecutionMode">Execution Mode</label><select id="testExecutionMode" name="testExecutionMode"><option value="Local">Local</option><option value="Remote">Remote</option></select></div>
+                        <div class="form-group"><label for="remoteURL">Remote URL</label><input type="url" id="remoteURL" name="remoteURL"></div>
+                        <div class="form-group"><label for="webDriverTimeDuraiton">WebDriver Timeout (sec)</label><input type="number" id="webDriverTimeDuraiton" name="webDriverTimeDuraiton"></div>
+                        <div class="form-group"><label for="testDataDirectory">Test Data Directory</label><input type="text" id="testDataDirectory" name="testDataDirectory"></div>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2 class="section-title">🩺 Auto-Heal Configuration</h2>
+                    <div class="form-grid">
+                        <div class="checkbox-group"><input type="checkbox" id="autoHealEnabled" name="autoHealEnabled"><label for="autoHealEnabled">Enable Auto-Heal</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="autoHealScreenshot" name="autoHealScreenshot"><label for="autoHealScreenshot">Screenshot on Heal</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="autoHealReport" name="autoHealReport"><label for="autoHealReport">Print Heal Report</label></div>
+                        <div class="form-group"><label for="autoHealMaxRetries">Max Retries (stale element)</label><input type="number" id="autoHealMaxRetries" name="autoHealMaxRetries"></div>
+                        <div class="form-group"><label for="autoHealRetryPrimary">Primary Retry Count</label><input type="number" id="autoHealRetryPrimary" name="autoHealRetryPrimary"></div>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2 class="section-title">📧 Mail Configuration</h2>
+                    <div class="form-grid">
+                        <div class="form-group"><label for="emailSMTPServer">SMTP Server</label><input type="text" id="emailSMTPServer" name="emailSMTPServer"></div>
+                        <div class="form-group"><label for="emailAddress">Email Address</label><input type="email" id="emailAddress" name="emailAddress"></div>
+                        <div class="form-group" style="grid-column: 1 / -1;"><label for="alertForInitiate">Alert for Initiate</label><textarea id="alertForInitiate" name="alertForInitiate"></textarea></div>
+                        <div class="form-group" style="grid-column: 1 / -1;"><label for="alertForUndefinedSkill">Alert for Undefined Skill</label><textarea id="alertForUndefinedSkill" name="alertForUndefinedSkill"></textarea></div>
+                        <div class="form-group" style="grid-column: 1 / -1;"><label for="alertForApproval">Alert for Approval</label><textarea id="alertForApproval" name="alertForApproval"></textarea></div>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2 class="section-title">🗄️ Database Settings</h2>
+                    <div class="form-grid">
+                        <div class="form-group"><label for="DBMS_TYPE">DBMS Type</label><select id="DBMS_TYPE" name="DBMS_TYPE"><option value="SQLSERVER">SQL Server</option><option value="MYSQL">MySQL</option><option value="POSTGRESQL">PostgreSQL</option><option value="ORACLE">Oracle</option></select></div>
+                        <div class="form-group"><label for="DBMSServerIP">Server IP</label><input type="text" id="DBMSServerIP" name="DBMSServerIP"></div>
+                        <div class="form-group"><label for="DBMSServerPort">Server Port</label><input type="text" id="DBMSServerPort" name="DBMSServerPort"></div>
+                        <div class="form-group"><label for="DatabaseName">Database Name</label><input type="text" id="DatabaseName" name="DatabaseName"></div>
+                        <div class="form-group"><label for="DBUserName">Username</label><input type="text" id="DBUserName" name="DBUserName"></div>
+                        <div class="form-group"><label for="DBPassword">Password</label><input type="password" id="DBPassword" name="DBPassword"></div>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2 class="section-title">🎯 Test Management</h2>
+                    <div class="form-grid">
+                        <div class="form-group"><label for="TestManagementTool">Tool</label><select id="TestManagementTool" name="TestManagementTool"><option value="Jira">Jira</option><option value="AzureDevOPS">Azure DevOps</option></select></div>
+                        <div class="form-group"><label for="TestManagementToolURL">Tool URL</label><input type="url" id="TestManagementToolURL" name="TestManagementToolURL"></div>
+                        <div class="form-group" style="grid-column: 1 / -1;"><label for="TestManagementToolApiKey">API Key</label><input type="password" id="TestManagementToolApiKey" name="TestManagementToolApiKey"></div>
+                        <div class="form-group"><label for="TestManagementProjectUserName">Project Username</label><input type="email" id="TestManagementProjectUserName" name="TestManagementProjectUserName"></div>
+                        <div class="form-group"><label for="TestManagementProejctKey">Project Key</label><input type="text" id="TestManagementProejctKey" name="TestManagementProejctKey"></div>
+                        <div class="form-group"><label for="TestManagementIssueTypeID">Issue Type ID</label><input type="text" id="TestManagementIssueTypeID" name="TestManagementIssueTypeID"></div>
+                        <div class="form-group"><label for="DefectAssigneeName">Defect Assignee</label><input type="text" id="DefectAssigneeName" name="DefectAssigneeName"></div>
+                        <div class="form-group"><label for="DefectReportedBy">Reported By</label><input type="email" id="DefectReportedBy" name="DefectReportedBy"></div>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2 class="section-title">⚡ Zephyr Configuration</h2>
+                    <div class="form-grid">
+                        <div class="form-group"><label for="baseURI">Base URI</label><input type="url" id="baseURI" name="baseURI"></div>
+                        <div class="form-group"><label for="accessKey">Access Key</label><input type="password" id="accessKey" name="accessKey"></div>
+                        <div class="form-group"><label for="secretKey">Secret Key</label><input type="password" id="secretKey" name="secretKey"></div>
+                        <div class="form-group"><label for="accountId">Account ID</label><input type="text" id="accountId" name="accountId"></div>
+                        <div class="form-group"><label for="projectId">Project ID</label><input type="text" id="projectId" name="projectId"></div>
+                        <div class="form-group"><label for="versionId">Version ID</label><input type="text" id="versionId" name="versionId"></div>
+                        <div class="form-group"><label for="testCycleName">Test Cycle Name</label><input type="text" id="testCycleName" name="testCycleName"></div>
+                        <div class="form-group" style="grid-column: 1 / -1;"><label for="cycleDesc">Cycle Description</label><textarea id="cycleDesc" name="cycleDesc"></textarea></div>
+                        <div class="form-group" style="grid-column: 1 / -1;"><label for="jqlQuery">JQL Query</label><textarea id="jqlQuery" name="jqlQuery"></textarea></div>
+                        <div class="form-group" style="grid-column: 1 / -1;"><label for="apiToken">API Token</label><input type="password" id="apiToken" name="apiToken"></div>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2 class="section-title">📝 Logger Configuration</h2>
+                    <div class="form-grid">
+                        <div class="form-group"><label for="logLevel">Log Level</label><select id="logLevel" name="logLevel"><option value="DEBUG">DEBUG</option><option value="INFO">INFO</option><option value="ERROR">ERROR</option></select></div>
+                        <div class="form-group"><label for="logFilePath">Log File Path</label><input type="text" id="logFilePath" name="logFilePath"></div>
+                        <div class="form-group"><label for="logFileName">Log File Name</label><input type="text" id="logFileName" name="logFileName"></div>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2 class="section-title">▶️ Run Automation</h2>
+                    <div class="form-grid">
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Test Suite</label>
+                            <select id="testSuiteSelect" style="padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1em;">
+                                <option value="all">All Tests (testng.xml)</option>
+                                <option value="orangehrm">OrangeHRM Only</option>
+                                <option value="skillmatrix">SkillMatrix Only</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1; display: flex; flex-direction: row; gap: 15px; align-items: center;">
+                            <button type="button" class="btn btn-primary" onclick="runTests()" id="runBtn" style="padding: 12px 30px;">▶️ Run Tests</button>
+                            <button type="button" class="btn btn-secondary" onclick="stopTests()" id="stopBtn" style="padding: 12px 30px; display: none;">⏹ Stop</button>
+                            <span id="runStatus" style="font-weight: 600; color: #667eea;"></span>
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Console Output</label>
+                            <pre id="testOutput" style="background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 8px; height: 300px; overflow-y: auto; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-break: break-all;">Ready to run tests...</pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2 class="section-title">📊 Report Viewer</h2>
+                    <div class="form-grid">
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Available Reports</label>
+                            <div id="reportList" style="display: flex; flex-wrap: wrap; gap: 10px; min-height: 40px; padding: 10px; background: #f5f5f5; border-radius: 8px;">
+                                <span style="color: #999;">Loading reports...</span>
+                            </div>
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Preview</label>
+                            <iframe id="reportFrame" style="width: 100%; height: 500px; border: 2px solid #e0e0e0; border-radius: 8px; background: #fff; display: none;" sandbox="allow-scripts allow-same-origin"></iframe>
+                            <div id="reportPlaceholder" style="padding: 40px; text-align: center; color: #999; background: #f9f9f9; border-radius: 8px;">Select a report above to preview</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button type="button" class="btn btn-secondary" onclick="loadConfig()">🔄 Load Config</button>
+                    <button type="submit" class="btn btn-primary">💾 Save Configuration</button>
+                    <button type="reset" class="btn btn-secondary">↩️ Reset Form</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        window.onload = () => { loadConfig(); loadReports(); };
+        async function loadConfig() {
+            try {
+                const res = await fetch('/api/load-config');
+                const data = await res.json();
+                if (data.success) {
+                    for (const [key, value] of Object.entries(data.config)) {
+                        const el = document.getElementById(key);
+                        if (el) el.type === 'checkbox' ? el.checked = value === 'true' : el.value = value;
+                    }
+                    showMessage('Configuration loaded successfully!', 'success');
+                } else showMessage('Error: ' + data.error, 'error');
+            } catch (e) { showMessage('Error: ' + e.message, 'error'); }
+        }
+
+        let abortController = null;
+
+        function runTests() {
+            const output = document.getElementById('testOutput');
+            const runBtn = document.getElementById('runBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const status = document.getElementById('runStatus');
+            const suite = document.getElementById('testSuiteSelect').value;
+
+            output.textContent = '';
+            status.textContent = 'Running...';
+            status.style.color = '#ff9800';
+            runBtn.disabled = true;
+            stopBtn.style.display = 'inline-block';
+
+            abortController = new AbortController();
+
+            fetch('/api/run-tests', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ suite: suite }),
+                signal: abortController.signal
+            }).then(async function(response) {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) {
+                            status.textContent = 'Completed';
+                            status.style.color = '#4caf50';
+                            runBtn.disabled = false;
+                            stopBtn.style.display = 'none';
+                            return;
+                        }
+                        output.textContent += decoder.decode(value, { stream: true });
+                        output.scrollTop = output.scrollHeight;
+                    }
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                    status.textContent = 'Error: ' + err.message;
+                    status.style.color = '#f44336';
+                    runBtn.disabled = false;
+                    stopBtn.style.display = 'none';
+                }
+            }).catch(function(err) {
+                if (err.name === 'AbortError') return;
+                status.textContent = 'Connection error';
+                status.style.color = '#f44336';
+                runBtn.disabled = false;
+                stopBtn.style.display = 'none';
+            });
+        }
+
+        function stopTests() {
+            if (abortController) {
+                abortController.abort();
+                abortController = null;
+            }
+            document.getElementById('runStatus').textContent = 'Stopped';
+            document.getElementById('runStatus').style.color = '#f44336';
+            document.getElementById('runBtn').disabled = false;
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('testOutput').textContent += '\n=== Execution stopped by user ===\n';
+        }
+
+        document.getElementById('configForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const config = {};
+            document.querySelectorAll('input, select, textarea').forEach(el => {
+                if (el.id) config[el.id] = el.type === 'checkbox' ? (el.checked ? 'true' : 'false') : el.value;
+            });
+            try {
+                const res = await fetch('/api/save-config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(config)
+                });
+                const result = await res.json();
+                showMessage(result.success ? 'Configuration saved!' : 'Error: ' + result.error, result.success ? 'success' : 'error');
+            } catch (e) { showMessage('Error: ' + e.message, 'error'); }
+        });
+        function loadReports() {
+            fetch('/api/reports')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var container = document.getElementById('reportList');
+                    if (!data.success || !data.reports.length) {
+                        container.innerHTML = '<span style="color: #999;">No reports found. Run tests to generate one.</span>';
+                        return;
+                    }
+                    container.innerHTML = '';
+                    data.reports.forEach(function(r) {
+                        var btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.style.cssText = 'padding: 8px 14px; font-size: 0.85em; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; text-align: left;';
+                        btn.title = r.path;
+                        btn.textContent = r.name;
+                        btn.onclick = function() { openReport(r.path, r.name); };
+                        container.appendChild(btn);
+                    });
+                })
+                .catch(function(err) {
+                    document.getElementById('reportList').innerHTML = '<span style="color: #f44336;">Error loading reports: ' + err.message + '</span>';
+                });
+        }
+
+        function openReport(path, name) {
+            var frame = document.getElementById('reportFrame');
+            var placeholder = document.getElementById('reportPlaceholder');
+            placeholder.style.display = 'none';
+            frame.style.display = 'block';
+            frame.src = path;
+        }
+
+        function showMessage(msg, type) {
+            const success = document.getElementById('successMessage');
+            const error = document.getElementById('errorMessage');
+            if (type === 'success') {
+                success.textContent = msg;
+                success.style.display = 'block';
+                error.style.display = 'none';
+                setTimeout(() => success.style.display = 'none', 5000);
+            } else {
+                error.textContent = msg;
+                error.style.display = 'block';
+                success.style.display = 'none';
+                setTimeout(() => error.style.display = 'none', 5000);
+            }
+        }
+    </script>
+</body>
+</html>

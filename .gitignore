@@ -1,0 +1,114 @@
+############################################
+# Maven
+############################################
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+
+test_result/
+Result.html
+
+
+############################################
+# Compiled files
+############################################
+*.class
+
+############################################
+# Logs
+############################################
+*.log
+logs/
+*.out
+
+############################################
+# Test Output / Reports (VERY IMPORTANT)
+############################################
+test-output/
+surefire-reports/
+failsafe-reports/
+reports/
+extent-reports/
+allure-results/
+allure-report/
+
+
+############################################
+# Screenshots / Automation Artifacts
+############################################
+screenshots/
+*.png
+*.jpg
+
+############################################
+# Temporary / Runtime Files
+############################################
+*.tmp
+*.temp
+*.swp
+
+############################################
+# OS Files
+############################################
+.DS_Store
+Thumbs.db
+
+############################################
+# IDE - IntelliJ
+############################################
+.idea/
+*.iml
+out/
+
+############################################
+# IDE - Eclipse
+############################################
+.project
+.classpath
+.settings/
+
+############################################
+# IDE - VS Code
+############################################
+.vscode/
+
+############################################
+# Node (if used anywhere)
+############################################
+node_modules/
+
+############################################
+# Environment / Secrets (IMPORTANT)
+############################################
+.env
+*.properties
+!src/test/resources/*.properties   # allow config files if needed
+
+############################################
+# WebDriver binaries (optional)
+############################################
+drivers/
+chromedriver*
+geckodriver*
+
+############################################
+# Zip / Generated files
+############################################
+*.zip
+*.tar
+*.gz
+
+############################################
+# Azure DevOps / CI artifacts
+############################################
+.azure/
+
+############################################
+# Auto-Heal persisted locators
+############################################
+healed-locators.json
