@@ -40,31 +40,41 @@ public class PlaywrightWebActionManager implements IWebActionManager<Locator> {
 				break;
 			}
 			default: {
-				this.browserType = driver.chromium();
+				/*this.browserType = driver.chromium();
 
 				this.page = browserType.launch(new BrowserType.LaunchOptions().setChannel("chrome").setHeadless(false))
-									.newPage();
+									.newPage();*/
+                this.browserType = driver.chromium();
+
+                String browserName = props.getProperty("browser");
+
+                BrowserType.LaunchOptions options = new BrowserType.LaunchOptions().setHeadless(false);
+
+                if ("edge".equalsIgnoreCase(browserName)) {
+
+                    options.setChannel("msedge");
+
+                } else {
+
+                    options.setChannel("chrome");
+                }
+
+                this.page = browserType.launch(options).newPage();
 				page.setViewportSize(Integer.parseInt(props.getProperty("browserWidth")),
 						Integer.parseInt(props.getProperty("browserHeight")));
-
 				break;
 			}
-
 			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
+		} catch (Exception ex) {ex.printStackTrace();
 		}
 	}
-
 	public void setWebDriver(Playwright driver, Page page) {
 		this.driver = driver;
 		this.page = page;
 		// wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-
 	}
-
 	public Page getDriver() {
-		return page;
+        return page;
 	}
 
 	@Override
@@ -130,7 +140,6 @@ public class PlaywrightWebActionManager implements IWebActionManager<Locator> {
 	@Override
 	public void Cleanup() {
 		driver.close();
-
 	}
 
 	@Override

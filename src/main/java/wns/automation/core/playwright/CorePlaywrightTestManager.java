@@ -36,25 +36,16 @@ public class CorePlaywrightTestManager extends CoreTestManager {
         try {
             try {
 
-                System.setProperty(
-                        "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD",
-                        "1");
+                System.setProperty("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1");
 
                 System.out.println("Before Playwright.create()");
-
                 driver = Playwright.create();
-
                 System.out.println("After Playwright.create()");
-
             }
             catch (Exception e) {
-                e.printStackTrace();
-                throw new RuntimeException(
-                        "Playwright Browser Launch Failed",
-                        e);
+                e.printStackTrace();throw new RuntimeException("Playwright Browser Launch Failed", e);
             }
             driver = Playwright.create();
-
             BrowserType browserType;
 
             switch (browser) {
@@ -68,10 +59,29 @@ public class CorePlaywrightTestManager extends CoreTestManager {
                     break;
             }
 
-            com.microsoft.playwright.Browser browserInstance =
+           /* com.microsoft.playwright.Browser browserInstance =
                     browserType.launch(new BrowserType.LaunchOptions().setExecutablePath(java.nio.file.Paths.get(
                             "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe")).setHeadless(false));
 
+            page = browserInstance.newPage();*/
+            String browserName = props.getProperty("browser");
+
+            System.out.println("Selected Browser : " + browserName);
+
+            BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions().setHeadless(false);
+
+            if ("edge".equalsIgnoreCase(browserName)) {
+                launchOptions.setExecutablePath(java.nio.file.Paths.get(
+                        "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"));
+
+            } else {
+
+                launchOptions.setExecutablePath(java.nio.file.Paths.get(
+                                "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"));
+            }
+
+            com.microsoft.playwright.Browser browserInstance =
+                    browserType.launch(launchOptions);
             page = browserInstance.newPage();
 
         }
