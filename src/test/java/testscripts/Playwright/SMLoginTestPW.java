@@ -2,14 +2,17 @@ package testscripts.Playwright;
 
 import com.aventstack.extentreports.Status;
 import org.testng.Assert;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 import testconfig.PlaywrightTestManager;
 import wns.automation.dataprovider.ExcelDataProviderCustom;
+import wns.automation.utilities.TestResultListener;
 
 import java.util.Map;
 
+@Listeners(TestResultListener.class)
 @Test(groups = {"Authentication"})
-public class SMLoginTestPW extends PlaywrightTestManager{
+public class SMLoginTestPW extends PlaywrightTestManager {
 
 	@Test(description = "Login with valid credentials", groups = {"Regression", "Positive"},
 	dataProvider = "ExcelDataUsingMaps", dataProviderClass = ExcelDataProviderCustom.class)

@@ -5,16 +5,16 @@
         <listener class-name="wns.automation.utilities.TestResultListener"/>
     </listeners>
 
-    <listeners>
+    <!--<listeners>
         <listener class-name="wns.automation.utilities.TestResultListener"/>
-    </listeners>
+    </listeners>-->
 
     <!-- Comment out either <test> block to run only one suite -->
     <test name="SkillMatrixTest">
         <classes>
-            <class name="testscripts.testMainCategory" />
-            <class name="testscripts.testSubCategory" />
-            <class name="testscripts.testSkills" />
+            <class name="testscripts.SkillMatrix.testMainCategory" />
+            <class name="testscripts.SkillMatrix.testSubCategory" />
+            <class name="testscripts.SkillMatrix.testSkills" />
         </classes>
     </test>
 

@@ -868,11 +868,25 @@ public class TestUtility {
 			// FETCH EXECUTION DETAILS
 			// ==========================================
 
-			String suiteName = TestResultListener.suiteName;
+			//String suiteName = TestResultListener.suiteName;
 
-			String environment =
-					props.getProperty("ApplicationUrl");
+            String suiteName;
 
+            if (TestResultListener.suiteName != null && !TestResultListener.suiteName.trim().isEmpty()) {
+                suiteName = TestResultListener.suiteName;
+            }
+            else {
+                suiteName = TestResultListener.applicationName + " Suite";
+            }
+
+//			String environment = props.getProperty("ApplicationUrl");
+            String environment = "";
+            if ("OrangeHRM".equals(TestResultListener.applicationName)) {
+                environment = props.getProperty("OrangeHRMUrl");
+            }
+            else if ("Skill Matrix".equals(TestResultListener.applicationName)) {
+                environment = props.getProperty("ApplicationUrl");
+            }
 			String executionStart =
 					formatTime(TestResultListener.executionStartTime);
 
@@ -922,7 +936,7 @@ public class TestUtility {
 					props.getProperty("emailAddress");
 
 			String sender =
-					"lokeshsingh.rajawat@wns.com";
+					"kapil.rana@wns.com";
 
 			// ==========================================
 			// SMTP CONFIG
@@ -947,9 +961,13 @@ public class TestUtility {
 
 			message.setFrom(new InternetAddress(sender));
 
-			message.setSubject(
+			/*message.setSubject(
 					"Automation Test Execution Report - Skill Matrix"
-			);
+			);*/
+            message.setSubject(
+                    "Automation Test Execution Report - "
+                            + TestResultListener.applicationName
+            );
 
 			message.setRecipients(
 					Message.RecipientType.TO,
@@ -1053,11 +1071,16 @@ public class TestUtility {
 
 							+
 
-							"<tr><td><b>Application</b></td><td>"
+							/*"<tr><td><b>Application</b></td><td>"
 							+
 							"Skill Matrix"
 							+
-							"</td></tr>"
+							"</td></tr>"*/
+                            "<tr><td><b>Application</b></td><td>"
+                            +
+                            TestResultListener.applicationName
+                            +
+                            "</td></tr>"
 
 							+
 
