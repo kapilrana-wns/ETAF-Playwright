@@ -1,13 +1,16 @@
 package testscripts.Playwright;
 
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 import com.aventstack.extentreports.Status;
 import org.testng.Assert;
 import testconfig.PlaywrightTestManager;
 import wns.automation.dataprovider.ExcelDataProviderCustom;
+import wns.automation.utilities.TestResultListener;
 
 import java.util.Map;
 
+@Listeners(TestResultListener.class)
 public class OHRMLoginTestPW extends PlaywrightTestManager {
 
     // @Test(description = "Login to OrangeHRM with valid admin credentials and verify dashboard")

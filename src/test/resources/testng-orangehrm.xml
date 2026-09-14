@@ -6,13 +6,19 @@
         <listener class-name="wns.automation.utilities.TestResultListener"/>
     </listeners>
 
-    <test name="OrangeHRMTest">
+    <!--<test name="OrangeHRMTest">
         <classes>
             <class name="testscripts.OrangeHRM.OrangeHRMLandingPageTest" />
             <class name="testscripts.OrangeHRM.OrangeHRMLoginTest" />
             <class name="testscripts.OrangeHRM.OrangeHRMHomePageTest" />
             <class name="testscripts.OrangeHRM.OrangeHRMAutoHealDemoTest" />
         </classes>
+    </test>-->
+    <test name="OrangeHRMTest">
+    <classes>
+        <class name="testscripts.Playwright.OHRMLoginTestPW"/>
+        <class name="testscripts.Playwright.SMLoginTestPW"/>
+    </classes>
     </test>
 
 </suite>

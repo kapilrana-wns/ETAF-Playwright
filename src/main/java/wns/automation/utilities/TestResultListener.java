@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-public class TestResultListener implements ITestListener, ISuiteListener {
+public class TestResultListener<suiteName> implements ITestListener, ISuiteListener {
 
     public static int total = 0;
     public static int passed = 0;
@@ -28,7 +28,8 @@ public class TestResultListener implements ITestListener, ISuiteListener {
     public static long executionStartTime;
     public static long executionEndTime;
 
-    public static String suiteName = "Default Suite";
+    public static String suiteName = "";
+    public static String applicationName = "";
 
     public static List<String> jiraDefectIDs =
             Collections.synchronizedList(new ArrayList<>());
@@ -85,14 +86,49 @@ public class TestResultListener implements ITestListener, ISuiteListener {
         }
     }
 
-    @Override
+   /* @Override
     public void onStart(ITestContext context) {
 
         executionStartTime = System.currentTimeMillis();
 
         jiraDefectIDs.clear();
         System.out.println("LISTENER onStart EXECUTED");
-    }
+    }*/
+
+        @Override
+        public void onStart(ITestContext context) {
+
+            executionStartTime = System.currentTimeMillis();
+
+            System.out.println("===== TEST START =====");
+            System.out.println("Context Name = " + context.getName());
+
+            String className = "";
+            if (context.getAllTestMethods().length > 0) {
+                className = context.getAllTestMethods()[0].getTestClass().getName();
+                System.out.println("Class Name = " + className);
+            }
+
+            // Determine Application Name
+            if (className.toLowerCase().contains("ohrm")|| className.toLowerCase().contains("orangehrm")) {
+                applicationName = "OrangeHRM";
+            }
+            else if (className.toLowerCase().contains("sm")) {
+                applicationName = "Skill Matrix";
+            }
+            else {
+                applicationName = "Automation";
+            }
+
+            // Determine Suite Name
+            suiteName = applicationName + " Suite";
+
+            jiraDefectIDs.clear();
+
+            System.out.println("Application Name = " + applicationName);
+            System.out.println("Suite Name = " + suiteName);
+            System.out.println("LISTENER onStart EXECUTED");
+        }
 
     @Override
     public void onFinish(ITestContext context) {

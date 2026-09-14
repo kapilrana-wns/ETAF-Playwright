@@ -112,3 +112,4 @@ geckodriver*
 # Auto-Heal persisted locators
 ############################################
 healed-locators.json
+/test-output
