@@ -126,10 +126,11 @@ public class ExtentResultManagerPW implements ITestResultManager {
 
                         defectId = connector.createDefect(defect);
 
-                        if (defectId != null && !defectId.isEmpty()) {TestResultListener.jiraDefectIDs.add(defectId);
+                        if (defectId != null && !defectId.isEmpty()) {
+                            TestResultListener.defectIDs.add(defectId);
                         }
 
-                        extentTest.info("Defect ID : " + defectId);
+                        extentTest.log(Status.INFO, MarkupHelper.createLabel("Defect ID :" + defectId, ExtentColor.RED));
                     }
 
                     updateTestManagement(result, connector, props, testExecutionStatus, defectId);

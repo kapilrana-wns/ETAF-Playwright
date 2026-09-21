@@ -11,6 +11,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -28,6 +29,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import com.microsoft.playwright.Locator;
+import org.openqa.selenium.*;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import wns.automation.connectors.Tools.IToolsConnector;
 import wns.automation.connectors.Tools.JiraConnector;
@@ -50,17 +53,6 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.openqa.selenium.Alert;
-import org.openqa.selenium.By;
-import org.openqa.selenium.ElementClickInterceptedException;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.OutputType;
-import org.openqa.selenium.PageLoadStrategy;
-import org.openqa.selenium.StaleElementReferenceException;
-import org.openqa.selenium.TakesScreenshot;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.chromium.ChromiumOptions;
@@ -90,6 +82,8 @@ import org.testng.Assert;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartUtils;
@@ -126,7 +120,7 @@ public class TestUtility {
 			FluentWait<WebDriver> fWait = new FluentWait<WebDriver>(driver)
 					.withTimeout(Duration.ofSeconds(timeOutInSec))
 					.pollingEvery(Duration.ofMillis(50))
-					.ignoring(org.openqa.selenium.NoSuchElementException.class)
+					.ignoring(NoSuchElementException.class)
 					.ignoring(StaleElementReferenceException.class);
 			fWait.until(ExpectedConditions.visibilityOf(element));
 		} catch (Exception e) {
@@ -157,8 +151,8 @@ public class TestUtility {
 					.withTimeout(Duration.ofSeconds(timeOutInSec))
 					.pollingEvery(Duration.ofMillis(50));
 			fWait.until(ExpectedConditions.invisibilityOf(element));
-		} catch (org.openqa.selenium.NoSuchElementException ignored) {
-		} catch (org.openqa.selenium.TimeoutException e) {
+		} catch (NoSuchElementException ignored) {
+		} catch (TimeoutException e) {
 			throw new RuntimeException("element is either not displayed or enabled");
 		}
 	}
@@ -455,7 +449,7 @@ public class TestUtility {
 		TakesScreenshot ts = (TakesScreenshot) driver;
 		File screenshotFile = ts.getScreenshotAs(OutputType.FILE);
 		try {
-			Files.move(screenshotFile.toPath(), Destination, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+			Files.move(screenshotFile.toPath(), Destination, StandardCopyOption.REPLACE_EXISTING);
 		} catch (Exception ex) {
 			ex.printStackTrace();
 			logger.debug(ex);
@@ -572,7 +566,7 @@ public class TestUtility {
 				TakesScreenshot ts = (TakesScreenshot) driver;
 				File screenshotFile = ts.getScreenshotAs(OutputType.FILE);
 				try {
-					Files.move(screenshotFile.toPath(), destination, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+					Files.move(screenshotFile.toPath(), destination, StandardCopyOption.REPLACE_EXISTING);
 				} catch (Exception e) {
 					throw e;
 				}
@@ -602,7 +596,7 @@ public class TestUtility {
 				TakesScreenshot ts = (TakesScreenshot) driver;
 				File screenshotFile = ts.getScreenshotAs(OutputType.FILE);
 				try {
-					Files.move(screenshotFile.toPath(), destination, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+					Files.move(screenshotFile.toPath(), destination, StandardCopyOption.REPLACE_EXISTING);
 				} catch (Exception e) {
 					throw e;
 				}
@@ -617,7 +611,7 @@ public class TestUtility {
 	public static void zipFolder(File sourceFolder, String zipFilePath) throws IOException {
 
 		FileOutputStream fos = new FileOutputStream(zipFilePath);
-		java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(fos);
+		ZipOutputStream zos = new ZipOutputStream(fos);
 
 		zipFile(sourceFolder, sourceFolder.getName(), zos);
 
@@ -625,7 +619,7 @@ public class TestUtility {
 		fos.close();
 	}
 
-	private static void zipFile(File fileToZip, String fileName, java.util.zip.ZipOutputStream zos) throws IOException {
+	private static void zipFile(File fileToZip, String fileName, ZipOutputStream zos) throws IOException {
 
 		if (fileToZip.isHidden()) {
 			return;
@@ -637,7 +631,7 @@ public class TestUtility {
 				fileName += "/";
 			}
 
-			zos.putNextEntry(new java.util.zip.ZipEntry(fileName));
+			zos.putNextEntry(new ZipEntry(fileName));
 			zos.closeEntry();
 
 			File[] children = fileToZip.listFiles();
@@ -648,7 +642,7 @@ public class TestUtility {
 		}
 
 		FileInputStream fis = new FileInputStream(fileToZip);
-		java.util.zip.ZipEntry zipEntry = new java.util.zip.ZipEntry(fileName);
+		ZipEntry zipEntry = new ZipEntry(fileName);
 		zos.putNextEntry(zipEntry);
 
 		byte[] bytes = new byte[1024];
@@ -995,33 +989,62 @@ public class TestUtility {
 			);
 
 			// ==========================================
-			// JIRA BUG LINKS
+			// DEFECT LINKS (JIRA / AZURE)
 			// ==========================================
 
-			String jiraDefectsHtml = "";
-			String jiraUrl = props.getProperty("TestManagementToolURL");
-			if (!TestResultListener.jiraDefectIDs.isEmpty() && jiraUrl != null && !jiraUrl.isEmpty()) {
+			String defectsHtml = "";
+			String toolUrl = props.getProperty("TestManagementToolURL");
+			String tmTool = props.getProperty("TestManagementTool");
+			List<String> defects = TestResultListener.defectIDs;
+
+			if (defects != null && !defects.isEmpty() && toolUrl != null && !toolUrl.isEmpty()) {
 				StringBuilder sb = new StringBuilder();
 				sb.append("<br>");
-				sb.append("<h3 style='color:#2E86C1;'>Jira Bugs Logged</h3>");
+				sb.append("<h3 style='color:#2E86C1;'>Defects Logged</h3>");
 				sb.append("<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse;'>");
 				sb.append("<tr style='background-color:#2E86C1; color:white;'><th>Defect ID</th><th>Link</th></tr>");
-				for (String id : TestResultListener.jiraDefectIDs) {
+				for (String id : defects) {
 					sb.append("<tr>");
 					sb.append("<td>").append(id).append("</td>");
-					sb.append("<td><a href='").append(jiraUrl).append("/browse/").append(id).append("'>")
-							.append(jiraUrl).append("/browse/").append(id).append("</a></td>");
+
+					String link = toolUrl;
+					try {
+					    if (tmTool != null && tmTool.equalsIgnoreCase("Jira")) {
+							link = toolUrl.endsWith("/") ? toolUrl + "browse/" + id : toolUrl + "/browse/" + id;
+					    } else if (tmTool != null && tmTool.equalsIgnoreCase("AzureDevOps")) {
+							String org = props.getProperty("organization");
+							String project = props.getProperty("project");
+							if (toolUrl.contains("dev.azure.com") && org != null && project != null) {
+							    link = toolUrl.endsWith("/") ? toolUrl + org + "/" + project + "/_workitems/edit/" + id
+							            : toolUrl + "/" + org + "/" + project + "/_workitems/edit/" + id;
+							} else if (project != null) {
+							    link = toolUrl.endsWith("/") ? toolUrl + project + "/_workitems/edit/" + id
+							            : toolUrl + "/" + project + "/_workitems/edit/" + id;
+							} else {
+							    // fallback to work item link pattern
+							    link = toolUrl + "/_workitems/edit/" + id;
+							}
+					    } else {
+							// unknown tool, point to base URL
+							link = toolUrl;
+					    }
+					} catch (Exception e) {
+					    link = toolUrl;
+					}
+
+					sb.append("<td><a href='").append(link).append("'>").append(link).append("</a></td>");
 					sb.append("</tr>");
 				}
 				sb.append("</table>");
-				jiraDefectsHtml = sb.toString();
+				defectsHtml = sb.toString();
 			}
 
 			// ==========================================
 			// HTML BODY
 			// ==========================================
 
-			String htmlBody =
+            String jiraDefectsHtml = "";
+            String htmlBody =
 
 					"<html>" +
 
@@ -1241,7 +1264,6 @@ public class TestUtility {
 							+
 							jiraDefectsHtml
 							+
-
 							"<br>"
 
 							+

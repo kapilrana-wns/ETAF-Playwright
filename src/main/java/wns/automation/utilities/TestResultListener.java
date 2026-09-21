@@ -31,8 +31,8 @@ public class TestResultListener<suiteName> implements ITestListener, ISuiteListe
     public static String suiteName = "";
     public static String applicationName = "";
 
-    public static List<String> jiraDefectIDs =
-            Collections.synchronizedList(new ArrayList<>());
+    public static List<String> jiraDefectIDs = Collections.synchronizedList(new ArrayList<>());
+    public static List<String> defectIDs = jiraDefectIDs;
 
     // Accumulates failed+skipped methods across all <test> blocks: Map<className, Set<methodName>>
     private static final Map<String, Set<String>> allFailedByClass = new LinkedHashMap<>();

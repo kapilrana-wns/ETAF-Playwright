@@ -359,77 +359,99 @@ public class JiraConnector implements IToolsConnector {
 			String auth = Base64.getEncoder()
 					.encodeToString((userName + ":" + jiraApiKey).getBytes());
 
-			// ---------- ADF DESCRIPTION (JAVA 8 SAFE) ----------
+				// First, check for existing defects using JQL and return existing key if found
+				String jql = "project = " + ProjectKey +
+							" AND issuetype = Bug AND summary ~ \"" + defect.getDefectSummary().replace("\"", "'") + "\"";
 
-			Map<String, Object> textNode = new HashMap<>();
-			textNode.put("type", "text");
-			textNode.put("text", defect.getDefectDescription());
+				Response searchResponse = RestAssured
+						.given()
+						.header("Authorization", "Basic " + auth)
+						.header("Content-Type", "application/json")
+						.queryParam("jql", jql)
+						.get(jiraUrl + "/rest/api/3/search");
 
-			Map<String, String> assignee = new HashMap<>();
-			assignee.put("id", "5cbab09955193a11cd0ac0a6");
+				if (searchResponse.statusCode() == 200) {
+					int total = searchResponse.jsonPath().getInt("total");
+					if (total > 0) {
+						// return the first existing issue key
+						String existingKey = searchResponse.jsonPath().getString("issues[0].key");
+						System.out.println("Defect already exists in Jira: " + existingKey);
+						return existingKey;
+					}
+				}
 
-			Map<String, Object> paragraphNode = new HashMap<>();
-			paragraphNode.put("type", "paragraph");
+				// ---------- ADF DESCRIPTION (JAVA 8 SAFE) ----------
 
-			List<Map<String, Object>> paragraphContent = new ArrayList<>();
-			paragraphContent.add(textNode);
-			paragraphNode.put("content", paragraphContent);
+				Map<String, Object> textNode = new HashMap<>();
+				textNode.put("type", "text");
+				textNode.put("text", defect.getDefectDescription());
 
-			Map<String, Object> description = new HashMap<>();
-			description.put("type", "doc");
-			description.put("version", 1);
+				Map<String, String> assignee = new HashMap<>();
+				// If specific assignee id is provided via props, try to use it; otherwise skip or leave default
+				assignee.put("id", "5cbab09955193a11cd0ac0a6");
 
-			List<Map<String, Object>> descriptionContent = new ArrayList<>();
-			descriptionContent.add(paragraphNode);
-			description.put("content", descriptionContent);
+				Map<String, Object> paragraphNode = new HashMap<>();
+				paragraphNode.put("type", "paragraph");
 
-			// ----------------------------------------------------
+				List<Map<String, Object>> paragraphContent = new ArrayList<>();
+				paragraphContent.add(textNode);
+				paragraphNode.put("content", paragraphContent);
 
-			Map<String, String> project = new HashMap<>();
-			project.put("key", ProjectKey);
+				Map<String, Object> description = new HashMap<>();
+				description.put("type", "doc");
+				description.put("version", 1);
 
-			Map<String, String> issueType = new HashMap<>();
-			issueType.put("name", "Bug");
+				List<Map<String, Object>> descriptionContent = new ArrayList<>();
+				descriptionContent.add(paragraphNode);
+				description.put("content", descriptionContent);
 
-			List<String> labels = new ArrayList<>();
-			labels.add("AutomationBug");
+				// ----------------------------------------------------
 
-			Map<String, Object> fields = new HashMap<>();
-			fields.put("project", project);
-			fields.put("summary", defect.getDefectSummary());
-			fields.put("description", description);
-			fields.put("issuetype", issueType);
-			fields.put("labels", labels);
-			fields.put("assignee", assignee);
+				Map<String, String> project = new HashMap<>();
+				project.put("key", ProjectKey);
 
-			Map<String, Object> requestBody = new HashMap<>();
-			requestBody.put("fields", fields);
+				Map<String, String> issueType = new HashMap<>();
+				issueType.put("name", "Bug");
 
-			Response response = RestAssured
-					.given()
-					.header("Authorization", "Basic " + auth)
-					.header("Content-Type", "application/json")
-					.body(requestBody)
-					.post(jiraUrl + "/rest/api/3/issue");
+				List<String> labels = new ArrayList<>();
+				labels.add("AutomationBug");
 
-			if (response.statusCode() == 201) {
+				Map<String, Object> fields = new HashMap<>();
+				fields.put("project", project);
+				fields.put("summary", defect.getDefectSummary());
+				fields.put("description", description);
+				fields.put("issuetype", issueType);
+				fields.put("labels", labels);
+				fields.put("assignee", assignee);
 
-				String issueKey = response.jsonPath().getString("key");
-				System.out.println("Defect Created: " + issueKey);
-				return issueKey;
+				Map<String, Object> requestBody = new HashMap<>();
+				requestBody.put("fields", fields);
 
-			} else {
+				Response response = RestAssured
+						.given()
+						.header("Authorization", "Basic " + auth)
+						.header("Content-Type", "application/json")
+						.body(requestBody)
+						.post(jiraUrl + "/rest/api/3/issue");
 
-				System.out.println("Defect Creation Failed:");
-				System.out.println(response.asPrettyString());
+				if (response.statusCode() == 201) {
+
+					String issueKey = response.jsonPath().getString("key");
+					System.out.println("Defect Created: " + issueKey);
+					return issueKey;
+
+				} else {
+
+					System.out.println("Defect Creation Failed:");
+					System.out.println(response.asPrettyString());
+				}
+
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 
-		} catch (Exception e) {
-			e.printStackTrace();
+			return null;
 		}
-
-		return null;
-	}
 
 	/**
 	 * @return the versionId

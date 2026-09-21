@@ -101,7 +101,7 @@ public class ExtentResultManager implements ITestResultManager {
                         defect.setDefectDescription("Test Name :" + Result.getName() + "\nDescription : " + Result.getMethod().getDescription() + " Failed");
                         defectID = testManagementToolConnector.createDefect(defect);
                         if (defectID != null && !defectID.isEmpty()) {
-                            TestResultListener.jiraDefectIDs.add(defectID);
+                            TestResultListener.defectIDs.add(defectID);
                         }
                         extentTest.log(Status.INFO, MarkupHelper.createLabel("Defect ID :" + defectID, ExtentColor.RED));
                     }

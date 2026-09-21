@@ -1,5 +1,6 @@
 package wns.automation.connectors.Tools;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Defect {
 
@@ -10,6 +11,22 @@ public class Defect {
     private String raisedBy;
     public String reporterName;
     
+	public Defect() {}
+
+	/** Convenience constructor */
+	public Defect(String summary, String description, String reporter, String assignee, List<String> tags) {
+		this.defectSummary = summary;
+		this.defectDescription = description;
+		this.reporterName = reporter;
+		this.assigneeName = assignee;
+		if (tags != null) this.Tags = new ArrayList<>(tags);
+	}
+
+	public void addTag(String tag) {
+		if (this.Tags == null) this.Tags = new ArrayList<>();
+		this.Tags.add(tag);
+	}
+
 	public String getReporterName() {
 		return reporterName;
 	}
@@ -47,7 +64,9 @@ public class Defect {
 		this.raisedBy = raisedBy;
 	}
     
-    
-    
+	@Override
+	public String toString() {
+		return "Defect[summary=" + defectSummary + ", reporter=" + reporterName + ", assignee=" + assigneeName + "]";
+	}
 
 }
