@@ -114,7 +114,9 @@ public class ExtentResultManager implements ITestResultManager {
                             System.out.println(testCaseID.toString());
                             testCaseID = param.toString();
                             testManagementToolConnector.addTestsToCycle("project = "
-                                    + props.getProperty("TestManagementProejctKey") + " AND Key =" + param);
+                                    + props.getProperty("TestManagementProjectKey",
+                                    props.getProperty("TestManagementProejctKey", ""))
+                                    + " AND Key =" + param);
                             testManagementToolConnector.updateTestCaseResult(testCaseID.toString(), testExecutionStatus,
                                     "Defect ID :" + defectID);
                         }
@@ -150,7 +152,10 @@ public class ExtentResultManager implements ITestResultManager {
 
                             Object testCaseID = passedParameters.get(passedParameters.size() - 1);
                             System.out.println(testCaseID.toString());
-                            testManagementToolConnector.addTestsToCycle("project = " + props.getProperty("TestManagementProejctKey") + " AND Key =" + testCaseID);
+                            testManagementToolConnector.addTestsToCycle("project = "
+                                    + props.getProperty("TestManagementProjectKey",
+                                    props.getProperty("TestManagementProejctKey", ""))
+                                    + " AND Key =" + testCaseID);
                             testManagementToolConnector.updateTestCaseResult(testCaseID.toString(), testExecutionStatus, "");
                         }
                     }

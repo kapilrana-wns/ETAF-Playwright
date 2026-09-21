@@ -114,23 +114,26 @@ public class ExtentResultManagerPW implements ITestResultManager {
 
                     if (Boolean.parseBoolean(props.getProperty("AutoLoggingDefect", "false"))) {
 
-                        Defect defect = new Defect();
+                        if (connector == null) {
+                            System.out.println("Skipping defect creation because the test management connector is unavailable.");
+                        } else {
+                            Defect defect = new Defect();
 
-                        defect.setAssigneeName(props.getProperty("DefectAssigneeName"));
+                            defect.setAssigneeName(props.getProperty("DefectAssigneeName"));
+                            defect.setReporterName(props.getProperty("DefectReportedBy"));
+                            defect.setDefectSummary(result.getName());
+                            defect.setDefectDescription("Test Name : " + result.getName()
+                                    + "\nDescription : " + result.getMethod().getDescription());
 
-                        defect.setReporterName(props.getProperty("DefectReportedBy"));
+                            defectId = connector.createDefect(defect);
 
-                        defect.setDefectSummary(result.getName());
+                            if (defectId != null && !defectId.isEmpty()) {
+                                TestResultListener.defectIDs.add(defectId);
+                            }
 
-                        defect.setDefectDescription("Test Name : " + result.getName() + "\nDescription : " + result.getMethod().getDescription());
-
-                        defectId = connector.createDefect(defect);
-
-                        if (defectId != null && !defectId.isEmpty()) {
-                            TestResultListener.defectIDs.add(defectId);
+                            extentTest.log(Status.INFO,
+                                    MarkupHelper.createLabel("Defect ID :" + defectId, ExtentColor.RED));
                         }
-
-                        extentTest.log(Status.INFO, MarkupHelper.createLabel("Defect ID :" + defectId, ExtentColor.RED));
                     }
 
                     updateTestManagement(result, connector, props, testExecutionStatus, defectId);
@@ -166,11 +169,18 @@ public class ExtentResultManagerPW implements ITestResultManager {
                 return;
             }
 
+            if (connector == null) {
+                System.out.println("Skipping test management update because the connector is unavailable.");
+                return;
+            }
+
             java.util.List<Object> passedParameters = Arrays.asList(result.getParameters());
 
             if (passedParameters.size() > 0) {Object testCaseID = passedParameters.get(passedParameters.size() - 1);
 
-                connector.addTestsToCycle("project = " + props.getProperty("TestManagementProejctKey") + " AND Key = " + testCaseID);
+                String projectKey = props.getProperty("TestManagementProjectKey",
+                        props.getProperty("TestManagementProejctKey", ""));
+                connector.addTestsToCycle("project = " + projectKey + " AND Key = " + testCaseID);
 
                 connector.updateTestCaseResult(testCaseID.toString(), executionStatus, defectId);
             }

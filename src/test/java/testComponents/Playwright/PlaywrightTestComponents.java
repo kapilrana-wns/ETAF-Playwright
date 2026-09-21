@@ -10,6 +10,7 @@ import com.microsoft.playwright.options.SelectOption;
 import pageobject.Playwright.PlaywrightPageObject;
 import wns.automation.core.IApplicationActionManager;
 import wns.automation.core.playwright.PlaywrightWebActionManager;
+import wns.automation.utilities.TestResultListener;
 import java.util.regex.Pattern;
 
 public class PlaywrightTestComponents extends PlaywrightWebActionManager implements  IApplicationActionManager {
@@ -125,6 +126,8 @@ public class PlaywrightTestComponents extends PlaywrightWebActionManager impleme
 
         try {
             openWebApp(url);
+            pageobject.initializeElements();
+            TestResultListener.environmentUrl = page.url();
             System.out.println("Opened URL : " + page.url());
             return true;
 

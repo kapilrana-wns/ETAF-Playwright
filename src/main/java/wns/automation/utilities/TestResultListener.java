@@ -30,6 +30,8 @@ public class TestResultListener<suiteName> implements ITestListener, ISuiteListe
 
     public static String suiteName = "";
     public static String applicationName = "";
+    public static String browserName = "";
+    public static String environmentUrl = "";
 
     public static List<String> jiraDefectIDs = Collections.synchronizedList(new ArrayList<>());
     public static List<String> defectIDs = jiraDefectIDs;
@@ -40,6 +42,15 @@ public class TestResultListener<suiteName> implements ITestListener, ISuiteListe
     @Override
     public void onStart(ISuite suite) {
         suiteName = suite.getName();
+        total = 0;
+        passed = 0;
+        failed = 0;
+        skipped = 0;
+        executionStartTime = 0;
+        executionEndTime = 0;
+        browserName = "";
+        environmentUrl = "";
+        jiraDefectIDs.clear();
         allFailedByClass.clear();
     }
 
@@ -124,6 +135,12 @@ public class TestResultListener<suiteName> implements ITestListener, ISuiteListe
             suiteName = applicationName + " Suite";
 
             jiraDefectIDs.clear();
+
+            Properties props = (Properties) context.getAttribute("props");
+            if (props != null) {
+                browserName = props.getProperty("browser", "");
+                environmentUrl = props.getProperty("ApplicationUrl", "");
+            }
 
             System.out.println("Application Name = " + applicationName);
             System.out.println("Suite Name = " + suiteName);

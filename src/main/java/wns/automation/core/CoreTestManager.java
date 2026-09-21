@@ -25,6 +25,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.Locale;
 
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
@@ -116,6 +117,10 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 			//JiraConnector Jconnector;
 
 			try {
+				if (!hasJiraConfiguration()) {
+					System.err.println("Jira integration disabled: required configuration is missing.");
+					break;
+				}
 				if (Boolean.parseBoolean(props.getProperty("AutoLoggingDefect")) == true ||
 						Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true)
 				{
@@ -128,6 +133,7 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 						testManagementToolConnector.createTestCycle();
 	 				}
 				}
+
 			} catch (Exception ex) {
 				ex.printStackTrace();
 			}
@@ -162,6 +168,19 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 		}
 		}
 	}
+
+	private boolean hasJiraConfiguration() {
+		String[] keys = {"baseURI", "accessKey", "secretKey", "projectId",
+				"versionId", "TestManagementProjectKey"};
+		for (String key : keys) {
+			String value = props.getProperty(key);
+			if (value == null || value.trim().isEmpty()) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	@Override
 	public void loadProperties() {
 
@@ -173,6 +192,7 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 		
 		try{
 		props = TestUtility.getTestConfig(propertyFile);
+		applyConfigurationOverrides(props);
 		// System.out.println("---------------------------------------------------");
 		// System.out.println("              Test configuration Details            ");
 		// System.out.println("----------------------------------------------------");
@@ -186,8 +206,27 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 		{
 			System.out.println("Error in loading test configuration from test.properties file from "+ propertyFile + " : " + ex.getMessage());
 		}
-
 	}
+
+	private void applyConfigurationOverrides(Properties properties) {
+			String[] keys = {
+					"emailSMTPServer", "emailAddress", "emailFrom",
+					"DBUserName", "DBPassword", "TestManagementToolApiKey",
+					"TestManagementProjectUserName", "accessKey", "secretKey",
+					"accountId", "apiToken"
+			};
+			for (String key : keys) {
+				String environmentKey = key.replaceAll("[^A-Za-z0-9]", "_")
+						.toUpperCase(Locale.ROOT);
+				String override = System.getProperty("etaf." + key);
+				if (override == null || override.trim().isEmpty()) {
+					override = System.getenv(environmentKey);
+				}
+				if (override != null && !override.trim().isEmpty()) {
+					properties.setProperty(key, override.trim());
+				}
+			}
+		}
 	
 	@Override
 	public void setupBrowser() {
@@ -204,17 +243,31 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 	@Override
 	public void setupTestExecutionMode() {
 
-		try {
-			String stringBrowser = props.getProperty("browser");
-			browser = Browser.valueOf(stringBrowser);
-			remoteURL = props.getProperty("remoteURL");
-			String mode = props.getProperty("testExecutionMode");
-			testExecutionMode = (mode != null && !mode.isEmpty())
-					? TestExecutionMode.valueOf(mode)
-					: TestExecutionMode.Local;
-		} catch (Exception ex) {
-			ex.printStackTrace();
+		String configuredBrowser = props.getProperty("browser", "Chrome").trim();
+		switch (configuredBrowser.toLowerCase(java.util.Locale.ROOT)) {
+			case "chrome":
+				browser = Browser.Chrome;
+				break;
+			case "firefox":
+				browser = Browser.FireFox;
+				break;
+			case "edge":
+				browser = Browser.Edge;
+				break;
+			case "chromium":
+				browser = Browser.CHROMIUM;
+				break;
+			default:
+				throw new IllegalArgumentException(
+						"Unsupported browser '" + configuredBrowser
+								+ "'. Supported values: Chrome, Firefox, Edge, Chromium");
 		}
+
+		remoteURL = props.getProperty("remoteURL");
+		String mode = props.getProperty("testExecutionMode");
+		testExecutionMode = (mode != null && !mode.trim().isEmpty())
+				? TestExecutionMode.valueOf(mode.trim())
+				: TestExecutionMode.Local;
 
 	}
 	public static String reportDirectpath = "";
@@ -289,11 +342,16 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 	public ScreenRecorder getScreenRecorder() {
 		
 		try {
-			if (Boolean.parseBoolean(props.getProperty("recordVideo")) == true) {
+			if (Boolean.parseBoolean(props.getProperty("recordVideo"))
+					&& !GraphicsEnvironment.isHeadless()) {
 				try {
 					//File movieFolder = new File((props.getProperty("testResultOutputDirectory")));
                     File movieFolder = new File(
                             CoreTestManager.reportDirectpath);
+                    if (!movieFolder.exists() && !movieFolder.mkdirs()) {
+						throw new IOException("Unable to create recording directory: "
+								+ movieFolder.getAbsolutePath());
+					}
 
 					screenRecorder = new ScreenRecorder(
 							GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice()
@@ -311,10 +369,11 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
-					screenRecorder = null;
+						System.out.println("Screen recording could not be initialized: "
+								+ e.getMessage());
+						screenRecorder = null;
+					}
 				}
-			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
 			screenRecorder = null;
@@ -359,8 +418,7 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 			try {
 				TestUtility.sendMail(props);
 			} catch (Exception ex) {
-				ex.printStackTrace();
-
+				System.err.println("Email notification unavailable: " + ex.getMessage());
 			}
 
 		}
@@ -368,7 +426,8 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 
 	@Override
 	public void closeScreenRecorder() {
-		if (Boolean.parseBoolean(props.getProperty("recordVideo")) == true) {
+		if (Boolean.parseBoolean(props.getProperty("recordVideo"))
+				&& screenRecorder != null) {
 			try {
 				screenRecorder.stop();
 				while (screenRecorder.getState() != State.DONE) {
@@ -378,7 +437,8 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+				System.out.println("Screen recording could not be finalized: "
+						+ e.getMessage());
 			}
 		}
 	}

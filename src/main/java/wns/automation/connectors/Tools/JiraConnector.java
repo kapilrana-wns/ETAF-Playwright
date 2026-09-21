@@ -92,12 +92,22 @@ public class JiraConnector implements IToolsConnector {
 					.when().post(pathParam).then().extract().response();
 			String response = response1.asString();
 			System.out.println(response);
+			if (response1.statusCode() < 200 || response1.statusCode() >= 300
+					|| response.trim().isEmpty() || !response.trim().startsWith("{")) {
+				cycleId = null;
+				System.out.println("Jira test cycle creation skipped: HTTP "
+						+ response1.statusCode() + " returned a non-JSON response.");
+				return;
+			}
 			JsonPath js = new JsonPath(response);
 
 			cycleId = js.get("id");
+			if (cycleId == null || cycleId.trim().isEmpty()) {
+				System.out.println("Jira test cycle creation returned no cycle id.");
+			}
 		} catch (Exception ex) {
-			System.out.println("createTestCycle method failed..." + ex.getCause());
-			ex.printStackTrace();
+			cycleId = null;
+			System.out.println("Jira test cycle creation unavailable: " + ex.getMessage());
 		}
 
 	}
@@ -167,6 +177,10 @@ public class JiraConnector implements IToolsConnector {
 	@Override
 	public void addTestsToCycle(String Jql) {
 		try {
+			if (cycleId == null || cycleId.trim().isEmpty()) {
+				System.out.println("Skipping Jira test association because no cycle was created.");
+				return;
+			}
 			String pathParam = "/public/rest/api/3.0/executions/add/cycle/" + cycleId;
 			String token = getJWTToken("POST", pathParam);
 			String jqlQuery = Jql; // prop.getProperty("jqlQuery");
@@ -188,6 +202,9 @@ public class JiraConnector implements IToolsConnector {
 	}
 
 	public String getExecutionId(String issuekey) throws Exception {
+		if (cycleId == null || cycleId.trim().isEmpty()) {
+			return "";
+		}
 		String queryParam = "?projectId=" + getProjectId() + "&versionId=" + getVersionId();
 		String pathParam = "/public/rest/api/3.0/executions/search/cycle/" + cycleId + queryParam;
 		String pathParam1 = "/public/rest/api/3.0/executions/search/cycle/" + cycleId;
@@ -202,6 +219,10 @@ public class JiraConnector implements IToolsConnector {
 
 				).then().extract().response().asString();
 
+		if (response.trim().isEmpty() || !response.trim().startsWith("{")) {
+			System.out.println("Jira execution lookup returned a non-JSON response.");
+			return "";
+		}
 		JsonPath js = new JsonPath(response);
 		int executionCount = js.getInt("searchObjectList.size()");
 		for (int i = 0; i < executionCount; i++) {
@@ -221,6 +242,11 @@ public class JiraConnector implements IToolsConnector {
 		String pathParam = "/public/rest/api/3.0/executions";
 		String token = getJWTToken("POST", pathParam);
 		String executionId = getExecutionId(issuekey);
+		if (executionId == null || executionId.trim().isEmpty()) {
+			System.out.println("Skipping Jira result update because no execution was found for "
+					+ issuekey + ".");
+			return log;
+		}
 
 		RestAssured.baseURI = getProperties().getProperty("baseURI");
 		RestAssured.given()
