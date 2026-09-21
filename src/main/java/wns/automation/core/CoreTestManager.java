@@ -49,7 +49,6 @@ import org.monte.media.FormatKeys.MediaType;
 import org.monte.media.math.Rational;
 import org.monte.screenrecorder.ScreenRecorder;
 import org.monte.screenrecorder.ScreenRecorder.State;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.ITestContext;
 
 public  abstract class CoreTestManager  implements ITestManagerHelper{
@@ -60,10 +59,9 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 	public static String testResultDirectory;
 	public static String testResultFile;
 	public static Properties props;
-	public static long webDriverWaitDuration;
+	public static long browserWaitDuration;
 	public ExtentReports extentReporter;
 	public static ITestResultManager testResultManager;
-	private WebDriverWait wait;
 	public ExtentTest extentTest;
 	protected ScreenRecorder screenRecorder;
 	protected  IToolsConnector testManagementToolConnector;
@@ -80,10 +78,6 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 
     public IToolsConnector getTestManagementToolConnector() {return testManagementToolConnector;}
 //
-//	public void setTc(WebDriver tc) {
-//		this.driver = tc;
-//	}
-
 	@Override
 	public void TestInitialization(ITestContext context)  {
 		try {
@@ -196,10 +190,10 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 	}
 	
 	@Override
-	public void setupWebDriver() {
-		webDriverWaitDuration = Long.parseLong(props.getProperty("webDriverTimeDuraiton", "10"));
+	public void setupBrowser() {
+		browserWaitDuration = Long.parseLong(props.getProperty("playwrightTimeout", "10"));
 		String remoteUrlStr = remoteURL != null ? remoteURL : "";
-		InitializeContext(browser, webDriverWaitDuration, testExecutionMode, remoteUrlStr);
+		InitializeContext(browser, browserWaitDuration, testExecutionMode, remoteUrlStr);
 	}
 	
 //	@Override
@@ -262,7 +256,12 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 		
 		switch (configuredReport) {
 		case Extent: {
-			setTestResultManager(new ExtentResultManager(testResultDirectory + "\\" + testResultFile));
+			if (this instanceof wns.automation.core.playwright.CorePlaywrightTestManager) {
+				setTestResultManager(new wns.automation.core.playwright.ExtentResultManagerPW(
+						testResultDirectory + "\\" + testResultFile));
+			} else {
+				setTestResultManager(new ExtentResultManager(testResultDirectory + "\\" + testResultFile));
+			}
 			extentReporter = (ExtentReports) getTestResultManager().getTestResultManager();
 
 			break;

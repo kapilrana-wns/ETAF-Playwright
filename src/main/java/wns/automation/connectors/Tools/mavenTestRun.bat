@@ -21,7 +21,7 @@ mvn clean test -D"testngxmlfile"=SmokeTestNG.xml -D"groups"=logintest,Regression
 
 
 https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html#groups
-https://www.seleniumeasy.com/maven-tutorials/choose-selected-testng-xml-files-to-execute-using-maven
+https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html
 
 mvn clean test -DsuiteXmlFile=mytestng.xml
 <plugin>

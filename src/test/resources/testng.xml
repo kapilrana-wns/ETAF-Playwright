@@ -10,20 +10,10 @@
     </listeners>-->
 
     <!-- Comment out either <test> block to run only one suite -->
-    <test name="SkillMatrixTest">
-        <classes>
-            <class name="testscripts.SkillMatrix.testMainCategory" />
-            <class name="testscripts.SkillMatrix.testSubCategory" />
-            <class name="testscripts.SkillMatrix.testSkills" />
-        </classes>
-    </test>
-
     <test name="OrangeHRMTest">
         <classes>
-            <class name="testscripts.OrangeHRM.OrangeHRMLandingPageTest" />
-            <class name="testscripts.OrangeHRM.OrangeHRMLoginTest" />
-            <class name="testscripts.OrangeHRM.OrangeHRMHomePageTest" />
-            <class name="testscripts.OrangeHRM.OrangeHRMAutoHealDemoTest" />
+            <class name="testscripts.Playwright.OHRMLoginTestPW" />
+            <class name="testscripts.Playwright.SMLoginTestPW" />
         </classes>
     </test>
 

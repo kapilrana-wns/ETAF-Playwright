@@ -90,11 +90,9 @@ node_modules/
 !src/test/resources/*.properties   # allow config files if needed
 
 ############################################
-# WebDriver binaries (optional)
+# Browser binaries (optional)
 ############################################
 drivers/
-chromedriver*
-geckodriver*
 
 ############################################
 # Zip / Generated files

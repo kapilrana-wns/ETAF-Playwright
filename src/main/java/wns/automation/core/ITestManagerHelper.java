@@ -8,7 +8,7 @@ public interface ITestManagerHelper {
 	public void TestInitialization(ITestContext context);
 	public void initializeTestManagementToolConnector(ITestContext context);
 	public void loadProperties();
-	public void setupWebDriver();
+	public void setupBrowser();
 	public void InitializeContext(Browser browser, Long waitduration, TestExecutionMode executionMode,
 			String remoteURL);
 	public void setupTestExecutionMode();

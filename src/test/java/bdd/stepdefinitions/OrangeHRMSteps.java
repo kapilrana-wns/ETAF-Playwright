@@ -1,55 +1,49 @@
 package bdd.stepdefinitions;
 
-import io.cucumber.java.en.*;
-import org.openqa.selenium.*;
-import org.openqa.selenium.support.ui.*;
-
-import java.time.Duration;
-
-import static org.testng.Assert.*;
+import com.microsoft.playwright.Page;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import org.testng.Assert;
 import bdd.hooks.Hooks;
-import pageobject.OrangeHRM.LoginPage;
-import pageobject.OrangeHRM.DashboardPage;
 
 public class OrangeHRMSteps {
-
-    WebDriver driver;
-    WebDriverWait wait;
-    LoginPage loginPage;
-    DashboardPage dashboardPage;
-
     @Given("User opens OrangeHRM application")
-    public void open_application() {
-        driver = Hooks.driver;
-        wait = new WebDriverWait(driver, Duration.ofSeconds(15));
-        loginPage = new LoginPage(driver);
-        dashboardPage = new DashboardPage(driver);
-
-        driver.get("https://opensource-demo.orangehrmlive.com");
-        driver.manage().window().maximize();
+    public void openApplication() {
+        Page page = Hooks.page();
+        String url = System.getProperty(
+                "OrangeHRMUrl",
+                "https://opensource-demo.orangehrmlive.com/web/index.php/auth/login");
+        page.navigate(url);
+        page.locator("input[name='username']").waitFor();
     }
 
     @When("User enters username {string} and password {string}")
-    public void enter_credentials(String username, String password) {
-        wait.until(ExpectedConditions.visibilityOf(loginPage.textboxUsername));
-        loginPage.textboxUsername.sendKeys(username);
-        loginPage.textboxPassword.sendKeys(password);
+    public void enterCredentials(String username, String password) {
+        Page page = Hooks.page();
+        page.locator("input[name='username']").fill(username);
+        page.locator("input[name='password']").fill(password);
     }
 
     @When("User clicks on login button")
-    public void click_login() {
-        loginPage.btnLogin.click();
+    public void clickLogin() {
+        Page page = Hooks.page();
+        page.locator("button[type='submit']").click();
     }
 
     @Then("User should be navigated to dashboard page")
-    public void validate_dashboard() {
-        WebElement dashboard = wait.until(ExpectedConditions.visibilityOf(dashboardPage.headingDashboard));
-        assertTrue(dashboard.isDisplayed(), "Dashboard not displayed");
+    public void verifyDashboard() {
+        Page page = Hooks.page();
+        Assert.assertTrue(
+                page.getByText("Dashboard", new Page.GetByTextOptions().setExact(true)).isVisible(),
+                "Dashboard should be displayed");
     }
 
     @Then("Error message should be displayed")
-    public void validate_error_message() {
-        WebElement error = wait.until(ExpectedConditions.visibilityOf(loginPage.textInvalidCredential));
-        assertTrue(error.isDisplayed(), "Error message not displayed");
+    public void verifyErrorMessage() {
+        Page page = Hooks.page();
+        Assert.assertTrue(
+                page.locator(".oxd-alert-content-text").isVisible(),
+                "Invalid login error should be displayed");
     }
 }

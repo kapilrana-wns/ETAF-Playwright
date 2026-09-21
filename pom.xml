@@ -40,22 +40,6 @@
 
 
         <!--
-        https://mvnrepository.com/artifact/io.github.bonigarcia/webdrivermanager -->
-        <dependency>
-            <groupId>io.github.bonigarcia</groupId>
-            <artifactId>webdrivermanager</artifactId>
-            <version>6.3.2</version>
-        </dependency>
-
-        <!--
-        https://mvnrepository.com/artifact/org.seleniumhq.selenium/selenium-java -->
-        <dependency>
-            <groupId>org.seleniumhq.selenium</groupId>
-            <artifactId>selenium-java</artifactId>
-            <version>4.27.0</version>
-        </dependency>
-
-        <!--
         https://mvnrepository.com/artifact/com.microsoft.playwright/playwright -->
         <!--<dependency>
             <groupId>com.microsoft.playwright</groupId>
@@ -318,7 +302,10 @@
                 <configuration>
                     <!-- IMPORTANT for Cucumber -->
                     <includes>
+                        <include>**/*Test.java</include>
+                        <include>**/*PW.java</include>
                         <include>**/*Runner.java</include>
+                        <include>**/test*.java</include>
                     </includes>
                 </configuration>
             </plugin>

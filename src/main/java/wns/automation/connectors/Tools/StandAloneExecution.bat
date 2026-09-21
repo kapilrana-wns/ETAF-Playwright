@@ -1,5 +1,5 @@
 @echo off 
-Rem This batch is to run the Selenium Scripts using batch File
+Rem This batch runs the Playwright test suites.
 Rem It takes two parameter, 
 Rem  1.  Provide list of suite xml files separated by comma after -Dsurefire.suiteXmlFiles= parameter
 Rem  2.  Provide the list of test script group that is to be executed after -Dgroups=

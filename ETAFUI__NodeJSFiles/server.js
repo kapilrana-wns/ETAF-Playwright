@@ -62,7 +62,7 @@ function generatePropertiesContent(properties) {
         'General Properties': ['ApplicationUrl', 'OrangeHRMUrl', 'browser', 'browserWidth', 'browserHeight', 'takeScreenShotFor', 'mobileEmulatorType', 'videoWidth', 'videoHeight'],
         'Auto-Heal Configuration': ['autoHealEnabled', 'autoHealScreenshot', 'autoHealMaxRetries', 'autoHealReport', 'autoHealRetryPrimary'],
         'Test Result Settings': ['testReporter', 'testResultOutputDirectory', 'extentResultMainHtmlFileName', 'testNGReportDir', 'allureTestResultOutputDirectory'],
-        'Test Execution': ['testExecutionMode', 'remoteURL', 'webDriverTimeDuraiton', 'testDataDirectory'],
+        'Test Execution': ['testExecutionMode', 'remoteURL', 'playwrightTimeout', 'testDataDirectory'],
         'Mail Configuration': ['emailSMTPServer', 'emailAddress', 'alertForInitiate'],
         'Database Settings': ['DBMS_TYPE', 'DBMSServerIP', 'DBMSServerPort', 'DatabaseName', 'DBUserName', 'DBPassword'],
         'Test Management': ['TestManagementTool', 'TestManagementToolURL', 'TestManagementToolApiKey', 'TestManagementProjectUserName', 'TestManagementProejctKey', 'TestManagementIssueTypeID', 'DefectAssigneeName', 'DefectReportedBy'],

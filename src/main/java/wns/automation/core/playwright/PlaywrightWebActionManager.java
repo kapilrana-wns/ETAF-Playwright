@@ -16,7 +16,7 @@ import wns.automation.core.Reporter;
 public class PlaywrightWebActionManager implements IWebActionManager<Locator> {
 
 	private Playwright driver;
-	private BrowserType browserType; // = Playwright.chromium();
+	private BrowserType browserType;
 	public Page page;
 	private Properties props;
 	public Reporter Reporter;
@@ -68,10 +68,9 @@ public class PlaywrightWebActionManager implements IWebActionManager<Locator> {
 		} catch (Exception ex) {ex.printStackTrace();
 		}
 	}
-	public void setWebDriver(Playwright driver, Page page) {
+	public void setPlaywrightContext(Playwright driver, Page page) {
 		this.driver = driver;
 		this.page = page;
-		// wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 	}
 	public Page getDriver() {
         return page;
@@ -130,7 +129,6 @@ public class PlaywrightWebActionManager implements IWebActionManager<Locator> {
 //			  out.close();
 //		  
 //			return out.;
-//		} catch (WebDriverException e) {
 //			// TODO Auto-generated catch block
 //			e.printStackTrace();
 //			return null;

@@ -122,7 +122,6 @@
         }
 
         .tech-badge.ai { background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.2); }
-        .tech-badge.selenium { background: rgba(6, 182, 212, 0.12); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.2); }
         .tech-badge.java { background: rgba(251, 146, 60, 0.12); color: #fb923c; border: 1px solid rgba(251, 146, 60, 0.2); }
         .tech-badge.maven { background: rgba(236, 72, 153, 0.12); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.2); }
 
@@ -1009,7 +1008,6 @@
                             <p>Configure &bull; Execute &bull; Report</p>
                             <div class="tech-badges">
                                 <span class="tech-badge ai"><i class="fas fa-brain" style="margin-right:3px;font-size:0.85em;"></i> AI-Powered</span>
-                                <span class="tech-badge selenium"><i class="fas fa-flask" style="margin-right:3px;font-size:0.85em;"></i> Selenium</span>
                                 <span class="tech-badge java"><i class="fab fa-java" style="margin-right:3px;font-size:0.85em;"></i> Java</span>
                                 <span class="tech-badge maven"><i class="fas fa-cubes" style="margin-right:3px;font-size:0.85em;"></i> Maven</span>
                             </div>
@@ -1122,11 +1120,11 @@
 
                         <div class="section collapsed">
                             <h2 class="section-title" onclick="toggleSection(this)"><i class="fas fa-rocket"></i> Test Execution <span class="chevron"><i class="fas fa-chevron-down"></i></span></h2>
-                            <p class="section-desc">Set execution mode (Local/Remote/Cloud), WebDriver timeout, remote server URL, and test data directory.</p>
+                            <p class="section-desc">Set execution mode, Playwright timeout, remote server URL, and test data directory.</p>
                             <div class="form-grid">
                                 <div class="form-group"><label for="testExecutionMode" class="required">Execution Mode</label><select id="testExecutionMode" name="testExecutionMode"><option value="Local">Local</option><option value="Remote">Remote</option><option value="Cloud">Cloud</option></select></div>
                                 <div class="form-group"><label for="remoteURL">Remote URL</label><input type="url" id="remoteURL" name="remoteURL"></div>
-                                <div class="form-group"><label for="webDriverTimeDuraiton" class="required">WebDriver Timeout (sec)</label><input type="number" id="webDriverTimeDuraiton" name="webDriverTimeDuraiton"></div>
+                                <div class="form-group"><label for="playwrightTimeout" class="required">Playwright Timeout (sec)</label><input type="number" id="playwrightTimeout" name="playwrightTimeout"></div>
                                 <div class="form-group"><label for="testDataDirectory">Test Data Directory</label><input type="text" id="testDataDirectory" name="testDataDirectory"></div>
                             </div>
                         </div>
@@ -1245,7 +1243,7 @@
                     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:28px;">
                         <div style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);border-radius:var(--radius-md);padding:18px 20px;display:flex;align-items:center;gap:16px;">
                             <div style="width:42px;height:42px;border-radius:10px;background:rgba(99,102,241,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;color:#818cf8;"><i class="fas fa-flask"></i></div>
-                            <div><div style="font-size:0.75em;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Framework</div><div style="font-weight:600;margin-top:2px;">TestNG + Selenium</div></div>
+                            <div><div style="font-size:0.75em;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Framework</div><div style="font-weight:600;margin-top:2px;">TestNG + Playwright</div></div>
                         </div>
                         <div style="background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.15);border-radius:var(--radius-md);padding:18px 20px;display:flex;align-items:center;gap:16px;">
                             <div style="width:42px;height:42px;border-radius:10px;background:rgba(6,182,212,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;color:#22d3ee;"><i class="fas fa-heartbeat"></i></div>
@@ -1450,7 +1448,7 @@
                                     <div class="feature-item"><i class="fas fa-cogs" style="color:#818cf8;"></i><span><strong>Feature Settings</strong> &mdash; toggles for mobile emulator, video recording, email, defect logging</span></div>
                                     <div class="feature-item"><i class="fas fa-globe" style="color:#22d3ee;"></i><span><strong>General Settings</strong> &mdash; URLs, browser, viewport, screenshot preferences</span></div>
                                     <div class="feature-item"><i class="fas fa-clipboard-check" style="color:#4ade80;"></i><span><strong>Test Result</strong> &mdash; reporter type (Extent / Allure), output directories</span></div>
-                                    <div class="feature-item"><i class="fas fa-rocket" style="color:#fb923c;"></i><span><strong>Test Execution</strong> &mdash; local/remote/cloud mode, WebDriver timeout</span></div>
+                                    <div class="feature-item"><i class="fas fa-rocket" style="color:#fb923c;"></i><span><strong>Test Execution</strong> &mdash; local/remote/cloud mode, Playwright timeout</span></div>
                                     <div class="feature-item"><i class="fas fa-heartbeat" style="color:#f472b6;"></i><span><strong>Auto-Heal</strong> &mdash; self-healing engine config, retry counts</span></div>
                                     <div class="feature-item"><i class="fas fa-database" style="color:#f87171;"></i><span><strong>Database</strong> &mdash; DBMS connection settings for test data</span></div>
                                 </div>
@@ -1517,7 +1515,7 @@
                             </div>
                             <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:16px;">
                                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><i class="fas fa-chrome" style="color:#818cf8;"></i><span style="font-weight:600;font-size:0.9em;">Browser driver errors</span></div>
-                                <p style="font-size:0.82em;color:var(--text-secondary);">WebDriverManager auto-resolves drivers. Ensure Chrome/Firefox is updated. For Firefox, set <span style="font-family:monospace;color:var(--accent-2);">browser=FireFox</span> in config.</p>
+                                <p style="font-size:0.82em;color:var(--text-secondary);">Playwright manages browser binaries. Install the configured browsers before execution.</p>
                             </div>
                         </div>
                     </div>
@@ -1674,7 +1672,7 @@
                 { id: 'browser', label: 'Browser' },
                 { id: 'testReporter', label: 'Test Reporter' },
                 { id: 'testExecutionMode', label: 'Execution Mode' },
-                { id: 'webDriverTimeDuraiton', label: 'WebDriver Timeout' }
+                { id: 'playwrightTimeout', label: 'Playwright Timeout' }
             ];
             var missing = [];
             required.forEach(function(field) {

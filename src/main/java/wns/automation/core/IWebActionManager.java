@@ -4,7 +4,6 @@ import wns.automation.core.constants.*;
 
 public interface IWebActionManager<T> {
 	public void openWebApp(String url);
-	//public WebElement Find(By element);
 	public void Click(T element);
 	public void Input(T element,String text);
 	public boolean isDisplayed(T element);
@@ -17,4 +16,3 @@ public interface IWebActionManager<T> {
 	boolean getTextFromElement(T element, String text);
 
 }
-

@@ -4,10 +4,8 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import lombok.Getter;
 import lombok.Setter;
-//import org.openqa.selenium.chrome.ChromeOptions;
 import wns.automation.connectors.Tools.IToolsConnector;
 import wns.automation.core.CoreTestManager;
-//import wns.automation.core.constants.Browser;
 import com.microsoft.playwright.Browser;
 import wns.automation.core.constants.TestExecutionMode;
 import wns.automation.utilities.TestUtility;
@@ -36,8 +34,6 @@ public class CorePlaywrightTestManager extends CoreTestManager {
         try {
             try {
 
-                System.setProperty("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1");
-
                 System.out.println("Before Playwright.create()");
                 driver = Playwright.create();
                 System.out.println("After Playwright.create()");
@@ -45,7 +41,6 @@ public class CorePlaywrightTestManager extends CoreTestManager {
             catch (Exception e) {
                 e.printStackTrace();throw new RuntimeException("Playwright Browser Launch Failed", e);
             }
-            driver = Playwright.create();
             BrowserType browserType;
 
             switch (browser) {
@@ -68,16 +63,13 @@ public class CorePlaywrightTestManager extends CoreTestManager {
 
             System.out.println("Selected Browser : " + browserName);
 
-            BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions().setHeadless(false);
+            BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions()
+                    .setHeadless(Boolean.parseBoolean(props.getProperty("headless", "false")));
 
-            if ("edge".equalsIgnoreCase(browserName)) {
-                launchOptions.setExecutablePath(java.nio.file.Paths.get(
-                        "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"));
-
-            } else {
-
-                launchOptions.setExecutablePath(java.nio.file.Paths.get(
-                                "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"));
+            if (browser == wns.automation.core.constants.Browser.Chrome) {
+                launchOptions.setChannel("chrome");
+            } else if (browser == wns.automation.core.constants.Browser.Edge) {
+                launchOptions.setChannel("msedge");
             }
 
             com.microsoft.playwright.Browser browserInstance =

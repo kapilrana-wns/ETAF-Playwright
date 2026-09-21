@@ -3,7 +3,7 @@
 <suite name="SkillMatrixSuite">
     <test name="SkillMatrixTest">
         <classes>
-            <class name="typescripts.Playwright.testSkillMatrixLoginPlaywright" />
+            <class name="testscripts.Playwright.SMLoginTestPW" />
         </classes>
     </test>
 </suite>

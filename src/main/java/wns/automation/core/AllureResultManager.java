@@ -1,23 +1,12 @@
 package wns.automation.core;
 
 import io.qameta.allure.Attachment;
-import org.openqa.selenium.OutputType;
-import org.openqa.selenium.TakesScreenshot;
-import org.openqa.selenium.WebDriver;
 import com.microsoft.playwright.Page;
 
 
 //@Listeners(AllureTestNg.class)
 public class AllureResultManager {//implements ITestResultManager {
 
-	@Attachment(value = "Page screenshot", type = "image/png")
-	public byte[] saveScreenshotPNG(WebDriver driver) {
-		return ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
-	   //return ((TakesScreenshot) driver.getDelegate()).getScreenshotAs(OutputType.BYTES);
-	}
-	
-	 
-	
 	@Attachment(value = "Page screenshot", type = "image/png")
 	public byte[] saveScreenshotPNG(Page page) {
 		

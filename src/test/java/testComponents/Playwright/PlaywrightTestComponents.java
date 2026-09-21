@@ -6,9 +6,11 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.AriaRole;
+import com.microsoft.playwright.options.SelectOption;
 import pageobject.Playwright.PlaywrightPageObject;
 import wns.automation.core.IApplicationActionManager;
 import wns.automation.core.playwright.PlaywrightWebActionManager;
+import java.util.regex.Pattern;
 
 public class PlaywrightTestComponents extends PlaywrightWebActionManager implements  IApplicationActionManager {
 
@@ -19,7 +21,7 @@ public class PlaywrightTestComponents extends PlaywrightWebActionManager impleme
 
 	public PlaywrightTestComponents(Playwright driver, Page page)
 	{
-		super.setWebDriver(driver, page);
+		super.setPlaywrightContext(driver, page);
 		this.pageobject = new PlaywrightPageObject(super.page);
 	}
 
@@ -132,4 +134,48 @@ public class PlaywrightTestComponents extends PlaywrightWebActionManager impleme
             return false;
         }
     }
+
+        public boolean createMainCategory(String businessUnit, String name, String description) {
+            return createCategory("Main Category", businessUnit, name, description, "MainCategoryName",
+                    "//table/tbody/tr[2]/td[2]");
+        }
+
+        public boolean createSubCategory(String businessUnit, String name, String description) {
+            return createCategory("Sub Category", businessUnit, name, description, "SubCategoryName",
+                    "//table/tbody/tr[2]/td[3]");
+        }
+
+        public boolean createSkills(String businessUnit, String mainCategory, String name, String description) {
+            page.getByText("Skill Management", new Page.GetByTextOptions().setExact(true)).click();
+            page.getByText("Skills", new Page.GetByTextOptions().setExact(true)).click();
+            page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Create New")).click();
+            page.locator("#AssociatedBusinessUnitID").selectOption(new SelectOption().setLabel(businessUnit));
+            page.locator("#AssociatedSubCategoryID").selectOption(new SelectOption().setLabel(mainCategory));
+            page.locator("#Name").fill(name);
+            page.locator("#Description").fill(description);
+            page.locator("input[type='submit']").click();
+            return page.locator("//table/tbody/tr[2]/td[5]").filter(
+                    new Locator.FilterOptions().setHasText(Pattern.compile(Pattern.quote(name)))).isVisible();
+        }
+
+        private boolean createCategory(String menu, String businessUnit, String name, String description,
+                                       String nameField, String resultLocator) {
+            page.getByText("Skill Management", new Page.GetByTextOptions().setExact(true)).click();
+            page.getByText(menu, new Page.GetByTextOptions().setExact(true)).click();
+            page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Create New")).click();
+            page.locator("#AssociatedBusinessUnitID").selectOption(new SelectOption().setLabel(businessUnit));
+            page.locator("#" + nameField).fill(name);
+            page.locator("#Description").fill(description);
+            page.locator("input[type='submit']").click();
+            return page.locator(resultLocator).filter(
+                    new Locator.FilterOptions().setHasText(Pattern.compile(Pattern.quote(name)))).isVisible();
+        }
+
+        public boolean deleteByName(String name) {
+            Locator row = page.locator("table tbody tr").filter(
+                    new Locator.FilterOptions().setHasText(Pattern.compile(Pattern.quote(name)))).first();
+            row.getByRole(AriaRole.LINK, new Locator.GetByRoleOptions().setName("Delete")).click();
+            page.locator("input[type='submit']").click();
+            return page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Create New")).isVisible();
+        }
 }

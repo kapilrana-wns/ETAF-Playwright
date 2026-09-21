@@ -56,11 +56,10 @@ public class PlaywrightTestManager extends CustomCSVDataProvider {
     public void setDriver(ITestContext context) {
 
         props = (Properties) context.getAttribute("props");
-//        tm.setupWebDriver();
 //        testComponents.put("tc", new PlaywrightTestComponents(tm.getDriver(), tm.page));
         try {
 
-            tm.setupWebDriver();
+            tm.setupBrowser();
 
             testComponents.put("tc", new PlaywrightTestComponents(tm.getDriver(), tm.page));
 

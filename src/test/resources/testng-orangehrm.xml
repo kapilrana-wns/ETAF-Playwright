@@ -8,10 +8,7 @@
 
     <!--<test name="OrangeHRMTest">
         <classes>
-            <class name="testscripts.OrangeHRM.OrangeHRMLandingPageTest" />
-            <class name="testscripts.OrangeHRM.OrangeHRMLoginTest" />
-            <class name="testscripts.OrangeHRM.OrangeHRMHomePageTest" />
-            <class name="testscripts.OrangeHRM.OrangeHRMAutoHealDemoTest" />
+            <class name="testscripts.Playwright.OHRMLoginTestPW" />
         </classes>
     </test>-->
     <test name="OrangeHRMTest">
