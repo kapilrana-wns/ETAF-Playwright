@@ -170,12 +170,22 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 	}
 
 	private boolean hasJiraConfiguration() {
-		String[] keys = {"baseURI", "accessKey", "secretKey", "projectId",
-				"versionId", "TestManagementProjectKey"};
+		String[] keys = {"baseURI", "accessKey", "secretKey", "accountId",
+				"TestManagementToolURL", "TestManagementProjectUserName",
+				"TestManagementToolApiKey", "TestManagementProjectKey"};
 		for (String key : keys) {
 			String value = props.getProperty(key);
 			if (value == null || value.trim().isEmpty()) {
 				return false;
+			}
+		}
+		if (Boolean.parseBoolean(props.getProperty("autoTestResultUpdate", "false"))) {
+			String[] cycleKeys = {"projectId", "versionId"};
+			for (String key : cycleKeys) {
+				String value = props.getProperty(key);
+				if (value == null || value.trim().isEmpty()) {
+					return false;
+				}
 			}
 		}
 		return true;
@@ -193,6 +203,7 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 		try{
 		props = TestUtility.getTestConfig(propertyFile);
 		applyConfigurationOverrides(props);
+		applyJiraCompatibilityDefaults(props);
 		// System.out.println("---------------------------------------------------");
 		// System.out.println("              Test configuration Details            ");
 		// System.out.println("----------------------------------------------------");
@@ -208,11 +219,27 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 		}
 	}
 
+	private void applyJiraCompatibilityDefaults(Properties properties) {
+		if (properties.getProperty("TestManagementProjectUserName", "").trim().isEmpty()) {
+			String reporter = properties.getProperty("DefectReportedBy", "").trim();
+			if (!reporter.isEmpty()) {
+				properties.setProperty("TestManagementProjectUserName", reporter);
+			}
+		}
+		if (properties.getProperty("TestManagementToolApiKey", "").trim().isEmpty()) {
+			String legacyToken = properties.getProperty("apiToken", "").trim();
+			if (!legacyToken.isEmpty()) {
+				properties.setProperty("TestManagementToolApiKey", legacyToken);
+			}
+		}
+	}
+
 	private void applyConfigurationOverrides(Properties properties) {
 			String[] keys = {
 					"emailSMTPServer", "emailAddress", "emailFrom",
 					"DBUserName", "DBPassword", "TestManagementToolApiKey",
-					"TestManagementProjectUserName", "accessKey", "secretKey",
+					"TestManagementProjectUserName", "TestManagementToolURL",
+					"TestManagementProjectKey", "accessKey", "secretKey",
 					"accountId", "apiToken"
 			};
 			for (String key : keys) {
@@ -221,6 +248,15 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 				String override = System.getProperty("etaf." + key);
 				if (override == null || override.trim().isEmpty()) {
 					override = System.getenv(environmentKey);
+				}
+				if (override == null || override.trim().isEmpty()) {
+					override = switch (key) {
+						case "TestManagementProjectUserName" -> System.getenv("JIRA_USERNAME");
+						case "TestManagementToolApiKey" -> System.getenv("JIRA_API_TOKEN");
+						case "TestManagementToolURL" -> System.getenv("JIRA_URL");
+						case "TestManagementProjectKey" -> System.getenv("JIRA_PROJECT_KEY");
+						default -> null;
+					};
 				}
 				if (override != null && !override.trim().isEmpty()) {
 					properties.setProperty(key, override.trim());

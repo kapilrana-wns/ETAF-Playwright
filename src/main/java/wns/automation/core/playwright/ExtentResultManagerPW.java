@@ -69,7 +69,10 @@ public class ExtentResultManagerPW implements ITestResultManager {
 
             Properties props = (Properties) result.getTestContext().getAttribute("props");
 
-            IToolsConnector connector = TestUtility.getTestManagementToolConnector(props);
+            Object configuredConnector = result.getAttribute("testManagementConnector");
+            IToolsConnector connector = configuredConnector instanceof IToolsConnector
+                    ? (IToolsConnector) configuredConnector
+                    : null;
 
             switch (testExecutionStatus) {
 
