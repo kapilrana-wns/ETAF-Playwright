@@ -3,7 +3,6 @@ package wns.automation.core;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Properties;
-
 import com.aventstack.extentreports.MediaEntityBuilder;
 import org.testng.ITestResult;
 import com.aventstack.extentreports.ExtentReports;
@@ -24,7 +23,7 @@ public class ExtentResultManager implements ITestResultManager {
     private static ExtentReports extentReporter;
     private static ExtentSparkReporter extenthtmlReporter = new ExtentSparkReporter("Spark.html");
     //private static ExtentHtmlReporter extenthtmlReporter;
-    private ExtentTest extentTest;
+    private  ExtentTest extentTest;
     private ScreenShotFor requireScreenShot = ScreenShotFor.ScreenShotNotRequired;
 
     public static ExtentReports getExtentReporter() {
@@ -80,28 +79,29 @@ public class ExtentResultManager implements ITestResultManager {
                     if (requireScreenShot.equals(ScreenShotFor.ScreenShotforBothFailedAndPassedCases) ||
                             requireScreenShot.equals(ScreenShotFor.ScreenShotOnlyForFailedCases)
                     ) {
-                        String screenshotpath = getScreenShot(Result, props);
+                        String screenshotpath=	getScreenShot(Result, props);
                         //extentTest.addScreenCaptureFromPath(screenshotpath);
                         if (screenshotpath != null && !screenshotpath.isEmpty()) {
                             extentTest.addScreenCaptureFromPath(screenshotpath);
                         }
                         extentTest.fail("Screenshot", MediaEntityBuilder.createScreenCaptureFromPath(screenshotpath).build());
                     }
-                    String defectID = "";
+                    String defectID="";
                     String testCaseID = "";
-                    if (Boolean.parseBoolean(props.getProperty("AutoLoggingDefect")) == true) {
+                    if(Boolean.parseBoolean(props.getProperty("AutoLoggingDefect")) == true)
+                    {
                         Defect defect = new Defect();
-                        defect.reporterName = props.getProperty("TestManagementProjectUserName");
+                        defect.reporterName= props.getProperty("TestManagementProjectUserName");
                         defect.setAssigneeName(props.getProperty("DefectAssigneeName"));
                         defect.setReporterName(props.getProperty("DefectReportedBy"));
 
                         //defect.setDefectSummary("Test Name :" + Result.getName()  + " Failed");
                         defect.setDefectSummary(Result.getName());
 
-                        defect.setDefectDescription("Test Name :" + Result.getName() + "\nDescription : " + Result.getMethod().getDescription() + " Failed");
+                        defect.setDefectDescription("Test Name :" + Result.getName() +"\nDescription : " + Result.getMethod().getDescription() + " Failed");
                         defectID = testManagementToolConnector.createDefect(defect);
                         if (defectID != null && !defectID.isEmpty()) {
-                            TestResultListener.defectIDs.add(defectID);
+                            TestResultListener.jiraDefectIDs.add(defectID);
                         }
                         extentTest.log(Status.INFO, MarkupHelper.createLabel("Defect ID :" + defectID, ExtentColor.RED));
                     }
@@ -114,17 +114,16 @@ public class ExtentResultManager implements ITestResultManager {
                             System.out.println(testCaseID.toString());
                             testCaseID = param.toString();
                             testManagementToolConnector.addTestsToCycle("project = "
-                                    + props.getProperty("TestManagementProjectKey",
-                                    props.getProperty("TestManagementProejctKey", ""))
-                                    + " AND Key =" + param);
+                                    + props.getProperty("TestManagementProejctKey") + " AND Key =" + param);
                             testManagementToolConnector.updateTestCaseResult(testCaseID.toString(), testExecutionStatus,
                                     "Defect ID :" + defectID);
                         }
                     }
 
-                    if (Boolean.parseBoolean(props.getProperty("AutoLoggingDefect")) == true &&
-                            Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true) {
-                        testManagementToolConnector.linkTestCaseandDefect(defectID, testCaseID);
+                    if(Boolean.parseBoolean(props.getProperty("AutoLoggingDefect")) == true &&
+                            Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true)
+                    {
+                        testManagementToolConnector.linkTestCaseandDefect(defectID,testCaseID);
                     }
 
                     break;
@@ -135,49 +134,48 @@ public class ExtentResultManager implements ITestResultManager {
                     extentTest.log(Status.PASS, MarkupHelper.createLabel(Result.getName(), ExtentColor.GREEN));
                     if (requireScreenShot.equals(ScreenShotFor.ScreenShotforBothFailedAndPassedCases) ||
                             requireScreenShot.equals(ScreenShotFor.ScreenShotOnlyForPassedCases)) {
-                        String screenshotpath = getScreenShot(Result, props);
-                        if (screenshotpath != null && !screenshotpath.isEmpty()) {
-                            extentTest.addScreenCaptureFromPath(screenshotpath);
-                            extentTest.fail(
-                                    "Screenshot",
-                                    MediaEntityBuilder
-                                            .createScreenCaptureFromPath(screenshotpath)
-                                            .build());
-                        }
+                        String screenshotpath=	getScreenShot(Result, props);
+                        extentTest.addScreenCaptureFromPath(screenshotpath);
                     }
 
                     if (Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true) {
-                        java.util.List<Object> passedParameters = Arrays.asList(Result.getParameters());
+                        java.util.List<Object> passedParameters =  Arrays.asList(Result.getParameters());
                         if (passedParameters.size() > 0) {
 
-                            Object testCaseID = passedParameters.get(passedParameters.size() - 1);
+                            Object testCaseID = passedParameters.get(passedParameters.size()-1);
                             System.out.println(testCaseID.toString());
-                            testManagementToolConnector.addTestsToCycle("project = "
-                                    + props.getProperty("TestManagementProjectKey",
-                                    props.getProperty("TestManagementProejctKey", ""))
-                                    + " AND Key =" + testCaseID);
-                            testManagementToolConnector.updateTestCaseResult(testCaseID.toString(), testExecutionStatus, "");
+                            testManagementToolConnector.addTestsToCycle("project = "+ props.getProperty("TestManagementProejctKey")+ " AND Key =" +testCaseID);
+                            testManagementToolConnector.updateTestCaseResult( testCaseID.toString(), testExecutionStatus,"");
                         }
                     }
+
+
                     break;
                 }
+
                 case ITestResult.SKIP: {
                     extentTest.log(Status.SKIP, MarkupHelper.createLabel(Result.getName(), ExtentColor.ORANGE));
                     break;
+
                 }
+
             }
+
+
         } catch (Exception ex) {
             System.out.println("ExtentResultManager.LogResult error: " + ex.getMessage());
             ex.printStackTrace();
         }
+
     }
+
     /**
      * @param Result
      * @param props
      * @throws Exception
      */
     private String getScreenShot(ITestResult Result, Properties props) throws Exception {
-        return TestUtility.getScreenShot(Result, props);
+        return	TestUtility.getScreenShot(Result, props);
 
     }
 

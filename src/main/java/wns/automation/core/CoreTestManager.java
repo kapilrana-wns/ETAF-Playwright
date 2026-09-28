@@ -25,7 +25,6 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
-import java.util.Locale;
 
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
@@ -50,436 +49,336 @@ import org.monte.media.FormatKeys.MediaType;
 import org.monte.media.math.Rational;
 import org.monte.screenrecorder.ScreenRecorder;
 import org.monte.screenrecorder.ScreenRecorder.State;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.ITestContext;
 
 public  abstract class CoreTestManager  implements ITestManagerHelper{
 
-	public static Browser browser;
-	public static TestExecutionMode testExecutionMode;
-	public static String remoteURL;
-	public static String testResultDirectory;
-	public static String testResultFile;
-	public static Properties props;
-	public static long browserWaitDuration;
-	public ExtentReports extentReporter;
-	public static ITestResultManager testResultManager;
-	public ExtentTest extentTest;
-	protected ScreenRecorder screenRecorder;
-	protected  IToolsConnector testManagementToolConnector;
+    public static Browser browser;
+    public static TestExecutionMode testExecutionMode;
+    public static String remoteURL;
+    public static String testResultDirectory;
+    public static String testResultFile;
+    public static Properties props;
+    public static long webDriverWaitDuration;
+    public ExtentReports extentReporter;
+    public static ITestResultManager testResultManager;
+    private WebDriverWait wait;
+    public ExtentTest extentTest;
+    protected ScreenRecorder screenRecorder;
+    protected  IToolsConnector testManagementToolConnector;
 
-	   
-	public ITestResultManager getTestResultManager() {
-		return testResultManager;
-	}
-//
-	public void setTestResultManager(ITestResultManager resultManager) {
-		testResultManager = resultManager;
 
-	}
+    public ITestResultManager getTestResultManager() {
+        return testResultManager;
+    }
+    //
+    public void setTestResultManager(ITestResultManager resultManager) {
+        testResultManager = resultManager;
+
+    }
 
     public IToolsConnector getTestManagementToolConnector() {return testManagementToolConnector;}
 //
-	@Override
-	public void TestInitialization(ITestContext context)  {
-		try {
-			System.out.println("In Test Initialization of CoreTestManager - Loading the properties started");
-			loadProperties(); // Load test.properties file
-			context.setAttribute("props", props);
-			System.out.println("In Test Initialization of CoreTestManager - Setting up test result");
-			setupTestResult(); // setup Test Result Directory & Screenshot requirement
-			System.out.println("In Test Initialization of CoreTestManager - Setting up test execution mode");
-			setupTestExecutionMode(); // Configure Test Execution mode
-			System.out.println("In Test Initialization of CoreTestManager - Test Management Tool Connector Initialization");
-			initializeTestManagementToolConnector(context);
-			System.out.println("In Test Initialization of CoreTestManager - Setting up Record Video feature");
-			if (Boolean.parseBoolean(props.getProperty("recordVideo")) == true) {
-				getScreenRecorder();
-				if (screenRecorder != null)
-					screenRecorder.start();
-			}
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			System.out.println("Exception in Test Initialization of CoreTestManager");
-			e.printStackTrace();
- 
-		}
-	
-	
+//	public void setTc(WebDriver tc) {
+//		this.driver = tc;
+//	}
 
-	}
+    @Override
+    public void TestInitialization(ITestContext context)  {
+        try {
+            System.out.println("In Test Initialization of CoreTestManager - Loading the properties started");
+            loadProperties(); // Load test.properties file
+            context.setAttribute("props", props);
+            System.out.println("In Test Initialization of CoreTestManager - Setting up test result");
+            setupTestResult(); // setup Test Result Directory & Screenshot requirement
+            System.out.println("In Test Initialization of CoreTestManager - Setting up test execution mode");
+            setupTestExecutionMode(); // Configure Test Execution mode
+            System.out.println("In Test Initialization of CoreTestManager - Test Management Tool Connector Initialization");
+            initializeTestManagementToolConnector(context);
+            System.out.println("In Test Initialization of CoreTestManager - Setting up Record Video feature");
+            if (Boolean.parseBoolean(props.getProperty("recordVideo")) == true) {
+                getScreenRecorder();
+                if (screenRecorder != null)
+                    screenRecorder.start();
+            }
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            System.out.println("Exception in Test Initialization of CoreTestManager");
+            e.printStackTrace();
 
-	@Override
-	public void initializeTestManagementToolConnector(ITestContext context) {
-		TestManagementTools testManagementTool = (TestManagementTools.valueOf(props.getProperty("TestManagementTool")));
-		//IToolsConnector testManagementToolConnector;
-		switch (testManagementTool) {
-		case Jira: {
-			//JiraConnector Jconnector;
+        }
 
-			try {
-				if (!hasJiraConfiguration()) {
-					System.err.println("Jira integration disabled: required configuration is missing.");
-					break;
-				}
-				if (Boolean.parseBoolean(props.getProperty("AutoLoggingDefect")) == true ||
-						Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true)
-				{
-					testManagementToolConnector = JiraConnector.getInstance(props);
-					context.setAttribute("testMangementToolConnector", testManagementToolConnector);
 
-					if (Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true	)
-					{
-						// Create Test Cycle
-						testManagementToolConnector.createTestCycle();
-	 				}
-				}
 
-			} catch (Exception ex) {
-				ex.printStackTrace();
-			}
-			break;
-		}
+    }
 
-		case AzureDevOPS: {
-			//JiraConnector Jconnector;
+    @Override
+    public void initializeTestManagementToolConnector(ITestContext context) {
+        TestManagementTools testManagementTool = (TestManagementTools.valueOf(props.getProperty("TestManagementTool")));
+        //IToolsConnector testManagementToolConnector;
+        switch (testManagementTool) {
+            case Jira: {
+                //JiraConnector Jconnector;
 
-			try {
-				if (Boolean.parseBoolean(props.getProperty("AutoLoggingDefect")) == true ||
-						Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true)
-				{
-					testManagementToolConnector = AzureDevOpsConnector.getInstance(props);
-					context.setAttribute("testMangementToolConnector", testManagementToolConnector);
+                try {
+                    if (Boolean.parseBoolean(props.getProperty("AutoLoggingDefect")) == true ||
+                            Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true)
+                    {
+                        testManagementToolConnector = JiraConnector.getInstance(props);
+                        context.setAttribute("testMangementToolConnector", testManagementToolConnector);
 
-					if (Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true	)
-					{
-						// Create Test Cycle
-						testManagementToolConnector.createTestCycle();
-	 				}
-				}
-			} catch (Exception ex) {
-				ex.printStackTrace();
-			}
-			break;
-		}
+                        if (Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true	)
+                        {
+                            // Create Test Cycle
+                            testManagementToolConnector.createTestCycle();
+                        }
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+                break;
+            }
 
-		default: {
-			break;
+            case AzureDevOPS: {
+                //JiraConnector Jconnector;
 
-		}
-		}
-	}
+                try {
+                    if (Boolean.parseBoolean(props.getProperty("AutoLoggingDefect")) == true ||
+                            Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true)
+                    {
+                        testManagementToolConnector = AzureDevOpsConnector.getInstance(props);
+                        context.setAttribute("testMangementToolConnector", testManagementToolConnector);
 
-	private boolean hasJiraConfiguration() {
-		String[] keys = {"baseURI", "accessKey", "secretKey", "accountId",
-				"TestManagementToolURL", "TestManagementProjectUserName",
-				"TestManagementToolApiKey", "TestManagementProjectKey"};
-		for (String key : keys) {
-			String value = props.getProperty(key);
-			if (value == null || value.trim().isEmpty()) {
-				return false;
-			}
-		}
-		if (Boolean.parseBoolean(props.getProperty("autoTestResultUpdate", "false"))) {
-			String[] cycleKeys = {"projectId", "versionId"};
-			for (String key : cycleKeys) {
-				String value = props.getProperty(key);
-				if (value == null || value.trim().isEmpty()) {
-					return false;
-				}
-			}
-		}
-		return true;
-	}
+                        if (Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true	)
+                        {
+                            // Create Test Cycle
+                            testManagementToolConnector.createTestCycle();
+                        }
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+                break;
+            }
 
-	@Override
-	public void loadProperties() {
+            default: {
+                break;
 
-		
-		System.out.println("Loading Test Configuration from test.properties file started...");
+            }
+        }
+    }
+    @Override
+    public void loadProperties() {
 
-		Object userdir = System.getProperty("user.dir");
-		String propertyFile = userdir + "\\src\\test\\java\\testconfig\\test.properties";
-		
-		try{
-		props = TestUtility.getTestConfig(propertyFile);
-		applyConfigurationOverrides(props);
-		applyJiraCompatibilityDefaults(props);
-		// System.out.println("---------------------------------------------------");
-		// System.out.println("              Test configuration Details            ");
-		// System.out.println("----------------------------------------------------");
-		// for (Object propkey : props.keySet()) {
-		// 	System.out.println(propkey.toString() + " :" + props.getProperty(propkey.toString()));
 
-		// }
-		// System.out.println("---------------------------------------------------");
-		TestUtility.setProps(props);
-		}catch(Exception ex)
-		{
-			System.out.println("Error in loading test configuration from test.properties file from "+ propertyFile + " : " + ex.getMessage());
-		}
-	}
+        System.out.println("Loading Test Configuration from test.properties file started...");
 
-	private void applyJiraCompatibilityDefaults(Properties properties) {
-		if (properties.getProperty("TestManagementProjectUserName", "").trim().isEmpty()) {
-			String reporter = properties.getProperty("DefectReportedBy", "").trim();
-			if (!reporter.isEmpty()) {
-				properties.setProperty("TestManagementProjectUserName", reporter);
-			}
-		}
-		if (properties.getProperty("TestManagementToolApiKey", "").trim().isEmpty()) {
-			String legacyToken = properties.getProperty("apiToken", "").trim();
-			if (!legacyToken.isEmpty()) {
-				properties.setProperty("TestManagementToolApiKey", legacyToken);
-			}
-		}
-	}
+        Object userdir = System.getProperty("user.dir");
+        String propertyFile = userdir + "\\src\\test\\java\\testconfig\\test.properties";
 
-	private void applyConfigurationOverrides(Properties properties) {
-			String[] keys = {
-					"emailSMTPServer", "emailAddress", "emailFrom",
-					"DBUserName", "DBPassword", "TestManagementToolApiKey",
-					"TestManagementProjectUserName", "TestManagementToolURL",
-					"TestManagementProjectKey", "accessKey", "secretKey",
-					"accountId", "apiToken"
-			};
-			for (String key : keys) {
-				String environmentKey = key.replaceAll("[^A-Za-z0-9]", "_")
-						.toUpperCase(Locale.ROOT);
-				String override = System.getProperty("etaf." + key);
-				if (override == null || override.trim().isEmpty()) {
-					override = System.getenv(environmentKey);
-				}
-				if (override == null || override.trim().isEmpty()) {
-					override = switch (key) {
-						case "TestManagementProjectUserName" -> System.getenv("JIRA_USERNAME");
-						case "TestManagementToolApiKey" -> System.getenv("JIRA_API_TOKEN");
-						case "TestManagementToolURL" -> System.getenv("JIRA_URL");
-						case "TestManagementProjectKey" -> System.getenv("JIRA_PROJECT_KEY");
-						default -> null;
-					};
-				}
-				if (override != null && !override.trim().isEmpty()) {
-					properties.setProperty(key, override.trim());
-				}
-			}
-		}
-	
-	@Override
-	public void setupBrowser() {
-		browserWaitDuration = Long.parseLong(props.getProperty("playwrightTimeout", "10"));
-		String remoteUrlStr = remoteURL != null ? remoteURL : "";
-		InitializeContext(browser, browserWaitDuration, testExecutionMode, remoteUrlStr);
-	}
-	
+        try{
+            props = TestUtility.getTestConfig(propertyFile);
+            // System.out.println("---------------------------------------------------");
+            // System.out.println("              Test configuration Details            ");
+            // System.out.println("----------------------------------------------------");
+            // for (Object propkey : props.keySet()) {
+            // 	System.out.println(propkey.toString() + " :" + props.getProperty(propkey.toString()));
+
+            // }
+            // System.out.println("---------------------------------------------------");
+            TestUtility.setProps(props);
+        }catch(Exception ex)
+        {
+            System.out.println("Error in loading test configuration from test.properties file from "+ propertyFile + " : " + ex.getMessage());
+        }
+
+    }
+
+    @Override
+    public void setupWebDriver() {
+        webDriverWaitDuration = Long.parseLong(props.getProperty("webDriverTimeDuraiton", "10"));
+        String remoteUrlStr = remoteURL != null ? remoteURL : "";
+        InitializeContext(browser, webDriverWaitDuration, testExecutionMode, remoteUrlStr);
+    }
+
 //	@Override
 //	public abstract  void InitializeContext(Browser browser, Long waitduration, TestExecutionMode executionMode,
 //			String remoteURL);
-	 
-	
-	@Override
-	public void setupTestExecutionMode() {
 
-		String configuredBrowser = props.getProperty("browser", "Chrome").trim();
-		switch (configuredBrowser.toLowerCase(java.util.Locale.ROOT)) {
-			case "chrome":
-				browser = Browser.Chrome;
-				break;
-			case "firefox":
-				browser = Browser.FireFox;
-				break;
-			case "edge":
-				browser = Browser.Edge;
-				break;
-			case "chromium":
-				browser = Browser.CHROMIUM;
-				break;
-			default:
-				throw new IllegalArgumentException(
-						"Unsupported browser '" + configuredBrowser
-								+ "'. Supported values: Chrome, Firefox, Edge, Chromium");
-		}
 
-		remoteURL = props.getProperty("remoteURL");
-		String mode = props.getProperty("testExecutionMode");
-		testExecutionMode = (mode != null && !mode.trim().isEmpty())
-				? TestExecutionMode.valueOf(mode.trim())
-				: TestExecutionMode.Local;
+    @Override
+    public void setupTestExecutionMode() {
 
-	}
-	public static String reportDirectpath = "";
-	@Override
-	public void setupTestResult() {
-		// setup test result directory
-		try {
-			Calendar calendar = Calendar.getInstance();
-			SimpleDateFormat formater = new SimpleDateFormat("dd_MM_yyyy_hh_mm_ss");
+        try {
+            String stringBrowser = props.getProperty("browser");
+            browser = Browser.valueOf(stringBrowser);
+            remoteURL = props.getProperty("remoteURL");
+            String mode = props.getProperty("testExecutionMode");
+            testExecutionMode = (mode != null && !mode.isEmpty())
+                    ? TestExecutionMode.valueOf(mode)
+                    : TestExecutionMode.Local;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
 
-			testResultDirectory = props.getProperty("testResultOutputDirectory");
-			testResultFile = props.getProperty("extentResultMainHtmlFileName");
-			testResultDirectory = testResultDirectory+ "Result_"+formater.format(calendar.getTime());
-			reportDirectpath = testResultDirectory;
-			// Setup TestNGReport
-			String testNGResultDirectory = props.getProperty("testNGReportDir");
-			String allureResultDirectory = props.getProperty("allureTestResultOutputDirectory");
-			File testResultdirectory = new File(String.valueOf(testResultDirectory));
-			File testNGDirectory = new File(String.valueOf(testNGResultDirectory));
-			File allureResultDir = new File(String.valueOf(allureResultDirectory));
-			for (File dir : new File[]{testResultdirectory, testNGDirectory, allureResultDir}) {
-				if (!dir.exists()) {
-					dir.mkdirs();
-				}
-			}
+    }
+    public static String reportDirectpath = "";
+    @Override
+    public void setupTestResult() {
+        // setup test result directory
+        try {
+            Calendar calendar = Calendar.getInstance();
+            SimpleDateFormat formater = new SimpleDateFormat("dd_MM_yyyy_hh_mm_ss");
 
-			FileUtils.cleanDirectory(testResultdirectory);
-			FileUtils.cleanDirectory(testNGDirectory);
-			FileUtils.cleanDirectory(allureResultDir);
+            testResultDirectory = props.getProperty("testResultOutputDirectory");
+            testResultFile = props.getProperty("extentResultMainHtmlFileName");
+            testResultDirectory = testResultDirectory+ "Result_"+formater.format(calendar.getTime());
+            reportDirectpath = testResultDirectory;
+            // Setup TestNGReport
+            String testNGResultDirectory = props.getProperty("testNGReportDir");
+            String allureResultDirectory = props.getProperty("allureTestResultOutputDirectory");
+            File testResultdirectory = new File(String.valueOf(testResultDirectory));
+            File testNGDirectory = new File(String.valueOf(testNGResultDirectory));
+            File allureResultDir = new File(String.valueOf(allureResultDirectory));
+            for (File dir : new File[]{testResultdirectory, testNGDirectory, allureResultDir}) {
+                if (!dir.exists()) {
+                    dir.mkdirs();
+                }
+            }
 
-			// TestRunner testNGrunner = (TestRunner) context;
-			// testNGrunner.setOutputDirectory(testNGResultDirectory);
+            FileUtils.cleanDirectory(testResultdirectory);
+            FileUtils.cleanDirectory(testNGDirectory);
+            FileUtils.cleanDirectory(allureResultDir);
 
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}
-		String reporter = props.getProperty("testReporter");
-		TestReportType configuredReport = TestReportType.valueOf(reporter);
-		
-		switch (configuredReport) {
-		case Extent: {
-			if (this instanceof wns.automation.core.playwright.CorePlaywrightTestManager) {
-				setTestResultManager(new wns.automation.core.playwright.ExtentResultManagerPW(
-						testResultDirectory + "\\" + testResultFile));
-			} else {
-				setTestResultManager(new ExtentResultManager(testResultDirectory + "\\" + testResultFile));
-			}
-			extentReporter = (ExtentReports) getTestResultManager().getTestResultManager();
+            // TestRunner testNGrunner = (TestRunner) context;
+            // testNGrunner.setOutputDirectory(testNGResultDirectory);
 
-			break;
-		}
-		case Allure: {
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        String reporter = props.getProperty("testReporter");
+        TestReportType configuredReport = TestReportType.valueOf(reporter);
 
-			//setTestResultManager(new AllureResultManager();
-			//setTestResultManager((new AllureResultManager()));
-			
-			break;
-		}
-		default:
-			setTestResultManager(new ExtentResultManager(testResultDirectory + "\\" + testResultFile));
-		}
+        switch (configuredReport) {
+            case Extent: {
+                setTestResultManager(new ExtentResultManager(testResultDirectory + "\\" + testResultFile));
+                extentReporter = (ExtentReports) getTestResultManager().getTestResultManager();
 
-		try {
-			String screenShotconfig = props.getProperty("takeScreenShotFor");
-			ScreenShotFor configuredScreenShotParam = ScreenShotFor.valueOf(screenShotconfig);
-			getTestResultManager().takeScreenShotFor(configuredScreenShotParam);
-		} catch (Exception ex) {
-			System.out.println("Screenshot config error: " + ex.getMessage());
-		}
-	}
-	@Override
-	public ScreenRecorder getScreenRecorder() {
-		
-		try {
-			if (Boolean.parseBoolean(props.getProperty("recordVideo"))
-					&& !GraphicsEnvironment.isHeadless()) {
-				try {
-					//File movieFolder = new File((props.getProperty("testResultOutputDirectory")));
-                    File movieFolder = new File(
-                            CoreTestManager.reportDirectpath);
-                    if (!movieFolder.exists() && !movieFolder.mkdirs()) {
-						throw new IOException("Unable to create recording directory: "
-								+ movieFolder.getAbsolutePath());
-					}
+                break;
+            }
+            case Allure: {
 
-					screenRecorder = new ScreenRecorder(
-							GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice()
-									.getDefaultConfiguration(),
-							new Rectangle(0, 0, Toolkit.getDefaultToolkit().getScreenSize().width,
-									Toolkit.getDefaultToolkit().getScreenSize().height),
-							new Format(MediaTypeKey, FormatKeys.MediaType.FILE, MimeTypeKey, MIME_AVI),
-							new Format(MediaTypeKey, FormatKeys.MediaType.VIDEO, EncodingKey,
-									ENCODING_AVI_TECHSMITH_SCREEN_CAPTURE, CompressorNameKey,
-									ENCODING_AVI_TECHSMITH_SCREEN_CAPTURE, DepthKey, 24, FrameRateKey,
-									Rational.valueOf(15), QualityKey, 1.0f, KeyFrameIntervalKey, 15 * 60),
-							new Format(MediaTypeKey, MediaType.VIDEO, EncodingKey, "black", FrameRateKey,
-									Rational.valueOf(30)),
-							null, movieFolder);
+                //setTestResultManager(new AllureResultManager();
+                //setTestResultManager((new AllureResultManager()));
 
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-						System.out.println("Screen recording could not be initialized: "
-								+ e.getMessage());
-						screenRecorder = null;
-					}
-				}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			screenRecorder = null;
-		}
-		return screenRecorder;
-	}
-	@Override
-	public void teardown() {
-		getTestResultManager().CloseReport();
-		closeScreenRecorder();
-		emailResult();
+                break;
+            }
+            default:
+                setTestResultManager(new ExtentResultManager(testResultDirectory + "\\" + testResultFile));
+        }
 
-		String src = CoreTestManager.testResultDirectory;
-		src = src + "\\Result.html";
-		String des = System.getProperty("user.dir") + "\\Result.html";
-		try {
-			 String path;
-			File f = new File(".");
-			path = f.getAbsolutePath().replace(".", "");
+        try {
+            String screenShotconfig = props.getProperty("takeScreenShotFor");
+            ScreenShotFor configuredScreenShotParam = ScreenShotFor.valueOf(screenShotconfig);
+            getTestResultManager().takeScreenShotFor(configuredScreenShotParam);
+        } catch (Exception ex) {
+            System.out.println("Screenshot config error: " + ex.getMessage());
+        }
+    }
+    @Override
+    public ScreenRecorder getScreenRecorder() {
 
-			Thread.sleep(2000);
-			Path src1 = Paths.get(src);
-			Path dest1 = Paths.get(des);
-			Files.copy(src1, dest1, StandardCopyOption.REPLACE_EXISTING);
-			Thread.sleep(10000);
-			Process process = Runtime.getRuntime().exec("cmd /c allure generate " + path + "allure-results --clean");
-			process.waitFor();
-			Thread.sleep(2500);
-			Process process1 = Runtime.getRuntime().exec("cmd /c allure serve " + path + "allure-results --clean");
-			process1.waitFor(30, TimeUnit.SECONDS);
-			Thread.sleep(2500);
-		}
-		catch (Exception e) {
-			System.out.println(e.getMessage());
-		}
+        try {
+            if (Boolean.parseBoolean(props.getProperty("recordVideo")) == true) {
+                try {
+                    File movieFolder = new File((props.getProperty("testResultOutputDirectory")));
 
-	}
+                    screenRecorder = new ScreenRecorder(
+                            GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice()
+                                    .getDefaultConfiguration(),
+                            new Rectangle(0, 0, Toolkit.getDefaultToolkit().getScreenSize().width,
+                                    Toolkit.getDefaultToolkit().getScreenSize().height),
+                            new Format(MediaTypeKey, FormatKeys.MediaType.FILE, MimeTypeKey, MIME_AVI),
+                            new Format(MediaTypeKey, FormatKeys.MediaType.VIDEO, EncodingKey,
+                                    ENCODING_AVI_TECHSMITH_SCREEN_CAPTURE, CompressorNameKey,
+                                    ENCODING_AVI_TECHSMITH_SCREEN_CAPTURE, DepthKey, 24, FrameRateKey,
+                                    Rational.valueOf(15), QualityKey, 1.0f, KeyFrameIntervalKey, 15 * 60),
+                            new Format(MediaTypeKey, MediaType.VIDEO, EncodingKey, "black", FrameRateKey,
+                                    Rational.valueOf(30)),
+                            null, movieFolder);
 
-	@Override
-	public void emailResult() {
-		if (Boolean.parseBoolean(props.getProperty("sendMailUponTetsCompletion")) == true) {
-			try {
-				TestUtility.sendMail(props);
-			} catch (Exception ex) {
-				System.err.println("Email notification unavailable: " + ex.getMessage());
-			}
+                } catch (Exception e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                    screenRecorder = null;
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            screenRecorder = null;
+        }
+        return screenRecorder;
+    }
+    @Override
+    public void teardown() {
+        getTestResultManager().CloseReport();
+        closeScreenRecorder();
+        emailResult();
 
-		}
-	}
+        String src = CoreTestManager.testResultDirectory;
+        src = src + "\\Result.html";
+        String des = System.getProperty("user.dir") + "\\Result.html";
+        try {
+            String path;
+            File f = new File(".");
+            path = f.getAbsolutePath().replace(".", "");
 
-	@Override
-	public void closeScreenRecorder() {
-		if (Boolean.parseBoolean(props.getProperty("recordVideo"))
-				&& screenRecorder != null) {
-			try {
-				screenRecorder.stop();
-				while (screenRecorder.getState() != State.DONE) {
-					System.out.println("AVI file is being prepared....");
-				}
-				System.out.println("AVI file is ready....");
+            Thread.sleep(2000);
+            Path src1 = Paths.get(src);
+            Path dest1 = Paths.get(des);
+            Files.copy(src1, dest1, StandardCopyOption.REPLACE_EXISTING);
+            Thread.sleep(10000);
+            Process process = Runtime.getRuntime().exec("cmd /c allure generate " + path + "allure-results --clean");
+            process.waitFor();
+            Thread.sleep(2500);
+            Process process1 = Runtime.getRuntime().exec("cmd /c allure serve " + path + "allure-results --clean");
+            process1.waitFor(30, TimeUnit.SECONDS);
+            Thread.sleep(2500);
+        }
+        catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
 
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				System.out.println("Screen recording could not be finalized: "
-						+ e.getMessage());
-			}
-		}
-	}
+    }
 
-	
-	
+    @Override
+    public void emailResult() {
+        if (Boolean.parseBoolean(props.getProperty("sendMailUponTetsCompletion")) == true) {
+            try {
+                TestUtility.sendMail(props);
+            } catch (Exception ex) {
+                ex.printStackTrace();
 
+            }
+
+        }
+    }
+
+    @Override
+    public void closeScreenRecorder() {
+        if (Boolean.parseBoolean(props.getProperty("recordVideo")) == true) {
+            try {
+                screenRecorder.stop();
+                while (screenRecorder.getState() != State.DONE) {
+                    System.out.println("AVI file is being prepared....");
+                }
+                System.out.println("AVI file is ready....");
+
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+    }
 }
