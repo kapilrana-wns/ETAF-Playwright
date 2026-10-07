@@ -64,9 +64,19 @@ public class ExtentResultManager implements ITestResultManager {
 //			extentTest = extentReporter.createTest(
 //					Result.getMethod().getDescription() + " :" + Result.getMethod().getMethodName());
             Properties props = (Properties) Result.getTestContext().getAttribute("props");
-            //IToolsConnector testManagementToolConnector = (IToolsConnector) Result.getAttribute("testManagementConnector");
             IToolsConnector testManagementToolConnector =
-                    TestUtility.getTestManagementToolConnector(props);
+                    (IToolsConnector) Result.getAttribute("testManagementConnector");
+            if (testManagementToolConnector == null) {
+                testManagementToolConnector = (IToolsConnector) Result.getTestContext()
+                        .getAttribute("testManagementToolConnector");
+            }
+            if (testManagementToolConnector == null) {
+                testManagementToolConnector = (IToolsConnector) Result.getTestContext()
+                        .getAttribute("testMangementToolConnector");
+            }
+            if (testManagementToolConnector == null) {
+                testManagementToolConnector = TestUtility.getTestManagementToolConnector(props);
+            }
 
             Path destination;
 
@@ -83,8 +93,8 @@ public class ExtentResultManager implements ITestResultManager {
                         //extentTest.addScreenCaptureFromPath(screenshotpath);
                         if (screenshotpath != null && !screenshotpath.isEmpty()) {
                             extentTest.addScreenCaptureFromPath(screenshotpath);
+                            extentTest.fail("Screenshot", MediaEntityBuilder.createScreenCaptureFromPath(screenshotpath).build());
                         }
-                        extentTest.fail("Screenshot", MediaEntityBuilder.createScreenCaptureFromPath(screenshotpath).build());
                     }
                     String defectID="";
                     String testCaseID = "";
@@ -95,15 +105,25 @@ public class ExtentResultManager implements ITestResultManager {
                         defect.setAssigneeName(props.getProperty("DefectAssigneeName"));
                         defect.setReporterName(props.getProperty("DefectReportedBy"));
 
-                        //defect.setDefectSummary("Test Name :" + Result.getName()  + " Failed");
                         defect.setDefectSummary(Result.getName());
-
+                        String testIdentity = Result.getTestClass().getName() + "#"
+                                + Result.getMethod().getMethodName();
+                        defect.setTestIdentity(testIdentity);
                         defect.setDefectDescription("Test Name :" + Result.getName() +"\nDescription : " + Result.getMethod().getDescription() + " Failed");
+                        if (testManagementToolConnector == null) {
+                            throw new IllegalStateException(
+                                    "Auto defect logging is enabled but no test management connector is available.");
+                        }
                         defectID = testManagementToolConnector.createDefect(defect);
                         if (defectID != null && !defectID.isEmpty()) {
-                            TestResultListener.jiraDefectIDs.add(defectID);
+                            if ("Jira".equalsIgnoreCase(props.getProperty("TestManagementTool"))) {
+                                TestResultListener.recordJiraDefect(testIdentity, defectID);
+                            }
+                            extentTest.log(Status.INFO, MarkupHelper.createLabel(
+                                    "Defect ID :" + defectID, ExtentColor.RED));
+                        } else {
+                            extentTest.log(Status.WARNING, "Jira defect was not created or returned.");
                         }
-                        extentTest.log(Status.INFO, MarkupHelper.createLabel("Defect ID :" + defectID, ExtentColor.RED));
                     }
 
                     if (Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true) {
@@ -114,14 +134,15 @@ public class ExtentResultManager implements ITestResultManager {
                             System.out.println(testCaseID.toString());
                             testCaseID = param.toString();
                             testManagementToolConnector.addTestsToCycle("project = "
-                                    + props.getProperty("TestManagementProejctKey") + " AND Key =" + param);
+                                    + TestUtility.getTestManagementProjectKey(props) + " AND Key =" + param);
                             testManagementToolConnector.updateTestCaseResult(testCaseID.toString(), testExecutionStatus,
                                     "Defect ID :" + defectID);
                         }
                     }
 
                     if(Boolean.parseBoolean(props.getProperty("AutoLoggingDefect")) == true &&
-                            Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true)
+                            Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true &&
+                            defectID != null && !defectID.isEmpty() && !testCaseID.isEmpty())
                     {
                         testManagementToolConnector.linkTestCaseandDefect(defectID,testCaseID);
                     }
@@ -135,7 +156,9 @@ public class ExtentResultManager implements ITestResultManager {
                     if (requireScreenShot.equals(ScreenShotFor.ScreenShotforBothFailedAndPassedCases) ||
                             requireScreenShot.equals(ScreenShotFor.ScreenShotOnlyForPassedCases)) {
                         String screenshotpath=	getScreenShot(Result, props);
-                        extentTest.addScreenCaptureFromPath(screenshotpath);
+                        if (screenshotpath != null && !screenshotpath.isEmpty()) {
+                            extentTest.addScreenCaptureFromPath(screenshotpath);
+                        }
                     }
 
                     if (Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true) {
@@ -144,7 +167,8 @@ public class ExtentResultManager implements ITestResultManager {
 
                             Object testCaseID = passedParameters.get(passedParameters.size()-1);
                             System.out.println(testCaseID.toString());
-                            testManagementToolConnector.addTestsToCycle("project = "+ props.getProperty("TestManagementProejctKey")+ " AND Key =" +testCaseID);
+                            testManagementToolConnector.addTestsToCycle("project = "
+                                    + TestUtility.getTestManagementProjectKey(props) + " AND Key =" + testCaseID);
                             testManagementToolConnector.updateTestCaseResult( testCaseID.toString(), testExecutionStatus,"");
                         }
                     }

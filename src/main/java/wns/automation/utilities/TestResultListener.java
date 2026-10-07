@@ -17,6 +17,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TestResultListener<suiteName> implements ITestListener, ISuiteListener {
 
@@ -35,6 +36,7 @@ public class TestResultListener<suiteName> implements ITestListener, ISuiteListe
 
     public static List<String> jiraDefectIDs = Collections.synchronizedList(new ArrayList<>());
     public static List<String> defectIDs = jiraDefectIDs;
+    public static final Map<String, String> jiraDefectsByTest = new ConcurrentHashMap<>();
 
     // Accumulates failed+skipped methods across all <test> blocks: Map<className, Set<methodName>>
     private static final Map<String, Set<String>> allFailedByClass = new LinkedHashMap<>();
@@ -51,6 +53,7 @@ public class TestResultListener<suiteName> implements ITestListener, ISuiteListe
         browserName = "";
         environmentUrl = "";
         jiraDefectIDs.clear();
+        jiraDefectsByTest.clear();
         allFailedByClass.clear();
     }
 
@@ -120,32 +123,48 @@ public class TestResultListener<suiteName> implements ITestListener, ISuiteListe
                 System.out.println("Class Name = " + className);
             }
 
-            // Determine Application Name
-            if (className.toLowerCase().contains("ohrm")|| className.toLowerCase().contains("orangehrm")) {
-                applicationName = "OrangeHRM";
-            }
-            else if (className.toLowerCase().contains("sm")) {
-                applicationName = "Skill Matrix";
-            }
-            else {
-                applicationName = "Automation";
-            }
-
-            // Determine Suite Name
+            applicationName = resolveApplicationName(className);
             suiteName = applicationName + " Suite";
-
-            jiraDefectIDs.clear();
 
             Properties props = (Properties) context.getAttribute("props");
             if (props != null) {
+                TestUtility.configureApplicationMetadata(props, className);
+                applicationName = props.getProperty("applicationName", applicationName);
+                suiteName = props.getProperty("suiteName", suiteName);
                 browserName = props.getProperty("browser", "");
-                environmentUrl = props.getProperty("ApplicationUrl", "");
+                environmentUrl = props.getProperty("environmentUrl", "");
             }
 
             System.out.println("Application Name = " + applicationName);
             System.out.println("Suite Name = " + suiteName);
             System.out.println("LISTENER onStart EXECUTED");
         }
+
+    public static void recordJiraDefect(String testIdentity, String defectID) {
+        if (testIdentity == null || testIdentity.isBlank() || defectID == null || defectID.isBlank()) {
+            return;
+        }
+        jiraDefectsByTest.put(testIdentity, defectID);
+        synchronized (jiraDefectIDs) {
+            if (!jiraDefectIDs.contains(defectID)) {
+                jiraDefectIDs.add(defectID);
+            }
+        }
+    }
+
+    private static String resolveApplicationName(String className) {
+        String normalizedClassName = className.toLowerCase(java.util.Locale.ROOT);
+        if (normalizedClassName.contains("ohrm") || normalizedClassName.contains("orangehrm")) {
+            return "OrangeHRM";
+        }
+        String simpleClassName = normalizedClassName.substring(normalizedClassName.lastIndexOf('.') + 1);
+        if (normalizedClassName.contains("skillmatrix")
+                || normalizedClassName.contains("skill_matrix")
+                || simpleClassName.startsWith("sm")) {
+            return "Skill Matrix";
+        }
+        return "Automation";
+    }
 
     @Override
     public void onFinish(ITestContext context) {

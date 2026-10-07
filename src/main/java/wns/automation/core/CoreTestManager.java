@@ -49,7 +49,6 @@ import org.monte.media.FormatKeys.MediaType;
 import org.monte.media.math.Rational;
 import org.monte.screenrecorder.ScreenRecorder;
 import org.monte.screenrecorder.ScreenRecorder.State;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.ITestContext;
 
 public  abstract class CoreTestManager  implements ITestManagerHelper{
@@ -63,7 +62,6 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
     public static long webDriverWaitDuration;
     public ExtentReports extentReporter;
     public static ITestResultManager testResultManager;
-    private WebDriverWait wait;
     public ExtentTest extentTest;
     protected ScreenRecorder screenRecorder;
     protected  IToolsConnector testManagementToolConnector;
@@ -89,6 +87,9 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
         try {
             System.out.println("In Test Initialization of CoreTestManager - Loading the properties started");
             loadProperties(); // Load test.properties file
+            if (context.getSuite() != null && context.getSuite().getName() != null) {
+                props.setProperty("suiteName", context.getSuite().getName());
+            }
             context.setAttribute("props", props);
             System.out.println("In Test Initialization of CoreTestManager - Setting up test result");
             setupTestResult(); // setup Test Result Directory & Screenshot requirement
@@ -126,7 +127,7 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
                             Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true)
                     {
                         testManagementToolConnector = JiraConnector.getInstance(props);
-                        context.setAttribute("testMangementToolConnector", testManagementToolConnector);
+                        context.setAttribute("testManagementToolConnector", testManagementToolConnector);
 
                         if (Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true	)
                         {
@@ -148,7 +149,7 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
                             Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true)
                     {
                         testManagementToolConnector = AzureDevOpsConnector.getInstance(props);
-                        context.setAttribute("testMangementToolConnector", testManagementToolConnector);
+                        context.setAttribute("testManagementToolConnector", testManagementToolConnector);
 
                         if (Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true	)
                         {
@@ -200,6 +201,11 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
         webDriverWaitDuration = Long.parseLong(props.getProperty("webDriverTimeDuraiton", "10"));
         String remoteUrlStr = remoteURL != null ? remoteURL : "";
         InitializeContext(browser, webDriverWaitDuration, testExecutionMode, remoteUrlStr);
+    }
+
+    @Override
+    public void setupBrowser() {
+        setupWebDriver();
     }
 
 //	@Override
@@ -292,7 +298,7 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
         try {
             if (Boolean.parseBoolean(props.getProperty("recordVideo")) == true) {
                 try {
-                    File movieFolder = new File((props.getProperty("testResultOutputDirectory")));
+                    File movieFolder = new File(reportDirectpath);
 
                     screenRecorder = new ScreenRecorder(
                             GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice()

@@ -99,7 +99,10 @@ public class AutoHealMetrics {
     }
 
     public long getAverageHealTime() {
-        List<Long> times = new ArrayList<Long>(healTimes);
+        List<Long> times;
+        synchronized (healTimes) {
+            times = new ArrayList<>(healTimes);
+        }
         if (times.isEmpty()) return 0;
         long sum = 0;
         for (long t : times) sum += t;

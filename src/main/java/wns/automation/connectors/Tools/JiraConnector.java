@@ -6,8 +6,11 @@ package wns.automation.connectors.Tools;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -17,6 +20,7 @@ import com.thed.zephyr.cloud.rest.client.JwtGenerator;
 import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
+import wns.automation.utilities.TestUtility;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
@@ -115,33 +119,33 @@ public class JiraConnector implements IToolsConnector {
 	public boolean isDefectExist(Defect defect) {
 
 		try {
-
-			String auth = Base64.getEncoder()
-					.encodeToString((userName + ":" + jiraApiKey).getBytes());
-
-			String jql = "project = " + ProjectKey +
-					" AND issuetype = Bug AND summary ~ \"" +
-					defect.getDefectSummary().replace("\"", "'") + "\"";
-
-			Response response = RestAssured
-					.given()
-					.header("Authorization", "Basic " + auth)
-					.header("Content-Type", "application/json")
-					.queryParam("jql", jql)
-					.get(jiraUrl + "/rest/api/3/search");
-
-			if (response.statusCode() == 200) {
-
-				int total = response.jsonPath().getInt("total");
-
-				if (total > 0) {
-					System.out.println("Defect already exists in Jira");
-					return true;
-				}
+			if (ProjectKey == null || ProjectKey.isBlank() || jiraUrl == null) {
+				System.err.println("Jira project key or URL is not configured; duplicate lookup was skipped.");
+				return false;
 			}
+			String auth = Base64.getEncoder()
+					.encodeToString((userName + ":" + jiraApiKey).getBytes(StandardCharsets.UTF_8));
+			String identityLabel = defect.getTestIdentity() == null || defect.getTestIdentity().isBlank()
+					? null
+					: getTestIdentityLabel(defect.getTestIdentity());
+			String duplicateCriteria = identityLabel == null
+					? "summary ~ \"" + escapeJqlString(defect.getDefectSummary()) + "\""
+					: "labels = \"" + identityLabel + "\"";
+			Response response = searchJiraIssues(auth,
+					"project = " + ProjectKey + " AND issuetype = Bug AND " + duplicateCriteria);
 
+			if (response.statusCode() != 200) {
+				System.err.println("Jira duplicate lookup failed with HTTP " + response.statusCode()
+						+ ": " + response.asString());
+				return false;
+			}
+			String existingKey = firstIssueKey(response);
+			if (existingKey != null) {
+				System.out.println("Defect already exists in Jira: " + existingKey);
+				return true;
+			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			System.err.println("Jira duplicate lookup failed: " + e.getMessage());
 		}
 
 		return false;
@@ -378,43 +382,61 @@ public class JiraConnector implements IToolsConnector {
 //
 //	}
 	@Override
-	public String createDefect(Defect defect) {
+	public synchronized String createDefect(Defect defect) {
 
 		try {
+			if (ProjectKey == null || ProjectKey.isBlank() || jiraUrl == null) {
+				System.err.println("Jira project key or URL is not configured; no defect was created.");
+				return null;
+			}
 
 			String auth = Base64.getEncoder()
-					.encodeToString((userName + ":" + jiraApiKey).getBytes());
+					.encodeToString((userName + ":" + jiraApiKey).getBytes(StandardCharsets.UTF_8));
+			String identityLabel = defect.getTestIdentity() == null || defect.getTestIdentity().isBlank()
+					? null
+					: getTestIdentityLabel(defect.getTestIdentity());
+			String jql = "project = " + ProjectKey + " AND issuetype = Bug AND "
+					+ (identityLabel == null
+							? "summary ~ \"" + escapeJqlString(defect.getDefectSummary()) + "\""
+							: "labels = \"" + identityLabel + "\"");
 
-				// First, check for existing defects using JQL and return existing key if found
-				String jql = "project = " + ProjectKey +
-							" AND issuetype = Bug AND summary ~ \"" + defect.getDefectSummary().replace("\"", "'") + "\"";
+			Response searchResponse = searchJiraIssues(auth, jql);
 
-				Response searchResponse = RestAssured
-						.given()
-						.header("Authorization", "Basic " + auth)
-						.header("Content-Type", "application/json")
-						.queryParam("jql", jql)
-						.get(jiraUrl + "/rest/api/3/search");
-
-				if (searchResponse.statusCode() == 200) {
-					int total = searchResponse.jsonPath().getInt("total");
-					if (total > 0) {
-						// return the first existing issue key
-						String existingKey = searchResponse.jsonPath().getString("issues[0].key");
-						System.out.println("Defect already exists in Jira: " + existingKey);
-						return existingKey;
-					}
+			if (searchResponse.statusCode() != 200) {
+				System.err.println("Jira duplicate lookup failed with HTTP " + searchResponse.statusCode()
+						+ ": " + searchResponse.asString() + "; no defect was created.");
+				return null;
+			}
+			String existingKey = firstIssueKey(searchResponse);
+			if (existingKey != null) {
+				System.out.println("Defect already exists in Jira: " + existingKey);
+				return existingKey;
+			}
+			if (identityLabel != null) {
+				String legacyJql = "project = " + ProjectKey
+						+ " AND issuetype = Bug AND labels = \"AutomationBug\" AND summary ~ \""
+						+ escapeJqlString(defect.getDefectSummary()) + "\"";
+				Response legacySearch = searchJiraIssues(auth, legacyJql);
+				if (legacySearch.statusCode() != 200) {
+					System.err.println("Jira legacy duplicate lookup failed with HTTP "
+							+ legacySearch.statusCode() + ": " + legacySearch.asString()
+							+ "; no defect was created.");
+					return null;
 				}
-
-				// ---------- ADF DESCRIPTION (JAVA 8 SAFE) ----------
+				String legacyKey = findExactSummaryIssueKey(legacySearch, defect.getDefectSummary());
+				if (legacyKey != null && legacyKey.isBlank()) {
+					System.err.println("Jira legacy duplicate lookup found multiple matching defects; no new defect was created.");
+					return null;
+				}
+				if (legacyKey != null) {
+					System.out.println("Reusing legacy Jira defect: " + legacyKey);
+					return legacyKey;
+				}
+			}
 
 				Map<String, Object> textNode = new HashMap<>();
 				textNode.put("type", "text");
 				textNode.put("text", defect.getDefectDescription());
-
-				Map<String, String> assignee = new HashMap<>();
-				// If specific assignee id is provided via props, try to use it; otherwise skip or leave default
-				assignee.put("id", "5cbab09955193a11cd0ac0a6");
 
 				Map<String, Object> paragraphNode = new HashMap<>();
 				paragraphNode.put("type", "paragraph");
@@ -441,6 +463,9 @@ public class JiraConnector implements IToolsConnector {
 
 				List<String> labels = new ArrayList<>();
 				labels.add("AutomationBug");
+				if (identityLabel != null) {
+					labels.add(identityLabel);
+				}
 
 				Map<String, Object> fields = new HashMap<>();
 				fields.put("project", project);
@@ -448,7 +473,6 @@ public class JiraConnector implements IToolsConnector {
 				fields.put("description", description);
 				fields.put("issuetype", issueType);
 				fields.put("labels", labels);
-				fields.put("assignee", assignee);
 
 				Map<String, Object> requestBody = new HashMap<>();
 				requestBody.put("fields", fields);
@@ -478,6 +502,69 @@ public class JiraConnector implements IToolsConnector {
 
 			return null;
 		}
+
+	private Response searchJiraIssues(String auth, String jql) {
+		return RestAssured
+				.given()
+				.header("Authorization", "Basic " + auth)
+				.header("Accept", "application/json")
+				.queryParam("jql", jql)
+				.queryParam("maxResults", 100)
+				.queryParam("fields", "key,summary")
+				.get(jiraUrl + "/rest/api/3/search/jql");
+	}
+
+	private static String firstIssueKey(Response response) {
+		List<Map<String, Object>> issues = response.jsonPath().getList("issues");
+		if (issues == null || issues.isEmpty()) {
+			return null;
+		}
+		Object key = issues.get(0).get("key");
+		if (!(key instanceof String issueKey) || issueKey.isBlank()) {
+			throw new IllegalStateException("Jira duplicate lookup returned an issue without a key.");
+		}
+		return issueKey;
+	}
+
+	private static String findExactSummaryIssueKey(Response response, String expectedSummary) {
+		List<Map<String, Object>> issues = response.jsonPath().getList("issues");
+		String matchingKey = null;
+		if (issues == null) {
+			return null;
+		}
+		for (Map<String, Object> issue : issues) {
+			if (!expectedSummary.equals(issue.get("summary"))) {
+				continue;
+			}
+			String key = (String) issue.get("key");
+			if (key == null || key.isBlank()) {
+				return "";
+			}
+			if (matchingKey != null) {
+				return "";
+			}
+			matchingKey = key;
+		}
+		return matchingKey;
+	}
+
+	private static String getTestIdentityLabel(String testIdentity) {
+		try {
+			byte[] digest = MessageDigest.getInstance("SHA-256")
+					.digest(testIdentity.getBytes(StandardCharsets.UTF_8));
+			StringBuilder label = new StringBuilder("automation-test-");
+			for (byte value : digest) {
+				label.append(String.format(Locale.ROOT, "%02x", value & 0xff));
+			}
+			return label.toString();
+		} catch (NoSuchAlgorithmException ex) {
+			throw new IllegalStateException("SHA-256 is unavailable", ex);
+		}
+	}
+
+	private static String escapeJqlString(String value) {
+		return value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"");
+	}
 
 	/**
 	 * @return the versionId
@@ -516,7 +603,7 @@ public class JiraConnector implements IToolsConnector {
 			this.jiraApiKey = prop.getProperty("TestManagementToolApiKey");
 			this.jiraUrl = new URI(prop.getProperty("TestManagementToolURL"));
 			this.userName = prop.getProperty("TestManagementProjectUserName");
-			this.ProjectKey = prop.getProperty("TestManagementProjectKey");
+			this.ProjectKey = TestUtility.getTestManagementProjectKey(prop);
 
 			System.out.println("Jira Connector Initialized Successfully");
 			System.out.println("Project Key: " + ProjectKey);

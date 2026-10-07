@@ -6,6 +6,7 @@ public class Defect {
 
 	private String defectSummary;
 	private String defectDescription;
+	private String testIdentity;
     private ArrayList<String> Tags = new ArrayList<String>();
     private String assigneeName;
     private String raisedBy;
@@ -44,6 +45,12 @@ public class Defect {
 	}
 	public void setDefectDescription(String defectDescription) {
 		this.defectDescription = defectDescription;
+	}
+	public String getTestIdentity() {
+		return testIdentity;
+	}
+	public void setTestIdentity(String testIdentity) {
+		this.testIdentity = testIdentity;
 	}
 	public ArrayList<String> getTags() {
 		return Tags;

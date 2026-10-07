@@ -11,7 +11,10 @@ public interface ITestManagerHelper {
 	public void setupBrowser();
 	public void InitializeContext(Browser browser, Long waitduration, TestExecutionMode executionMode,
 			String remoteURL);
-	public void setupTestExecutionMode();
+
+    void setupWebDriver();
+
+    public void setupTestExecutionMode();
 	public void setupTestResult();
 	public ScreenRecorder getScreenRecorder();
 	public void teardown();

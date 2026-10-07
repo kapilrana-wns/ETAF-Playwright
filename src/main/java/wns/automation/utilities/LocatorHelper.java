@@ -1,135 +1,69 @@
 package wns.automation.utilities;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.support.FindBy;
-import org.openqa.selenium.support.How;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class LocatorHelper {
 
-    private static How resolveHow(FindBy annotation) {
-        How how = annotation.how();
-        if (how == How.UNSET) {
-            if (!annotation.id().isEmpty()) return How.ID;
-            if (!annotation.name().isEmpty()) return How.NAME;
-            if (!annotation.css().isEmpty()) return How.CSS;
-            if (!annotation.xpath().isEmpty()) return How.XPATH;
-            if (!annotation.className().isEmpty()) return How.CLASS_NAME;
-            if (!annotation.tagName().isEmpty()) return How.TAG_NAME;
-            if (!annotation.linkText().isEmpty()) return How.LINK_TEXT;
-            if (!annotation.partialLinkText().isEmpty()) return How.PARTIAL_LINK_TEXT;
+    public static List<String> generateAlternateLocators(String selector) {
+        String normalized = normalize(selector);
+        List<String> alternatives = new ArrayList<>();
+
+        if (normalized.startsWith("xpath=")) {
+            String xpath = normalized.substring("xpath=".length());
+            String tag = xpath.replaceFirst("^.*//([a-zA-Z][\\w-]*).*$", "$1");
+            if (!tag.equals(xpath) && !xpath.contains("|")) {
+                alternatives.add("xpath=" + xpath.replaceFirst("//" + tag, "//*"));
+            }
+        } else if (normalized.startsWith("css=")) {
+            String css = normalized.substring("css=".length());
+            if (css.matches("#[\\w-]+")) {
+                String id = css.substring(1);
+                alternatives.add("[id='" + id + "']");
+                alternatives.add("xpath=//*[@id='" + id + "']");
+            } else if (css.matches("\\.[\\w-]+")) {
+                String className = css.substring(1);
+                alternatives.add("[class~='" + className + "']");
+                alternatives.add("xpath=//*[contains(concat(' ', normalize-space(@class), ' '), ' "
+                        + className + " ')]");
+            }
         }
-        return how;
-    }
-
-    private static String resolveUsing(FindBy annotation) {
-        How how = annotation.how();
-        if (how != How.UNSET) {
-            return annotation.using();
-        }
-        switch (resolveHow(annotation)) {
-            case ID: return annotation.id();
-            case NAME: return annotation.name();
-            case CSS: return annotation.css();
-            case XPATH: return annotation.xpath();
-            case CLASS_NAME: return annotation.className();
-            case TAG_NAME: return annotation.tagName();
-            case LINK_TEXT: return annotation.linkText();
-            case PARTIAL_LINK_TEXT: return annotation.partialLinkText();
-            default: return annotation.using();
-        }
-    }
-
-    public static By buildByFromFindBy(FindBy annotation) {
-        How how = resolveHow(annotation);
-        String using = resolveUsing(annotation);
-
-        switch (how) {
-            case ID: return By.id(using);
-            case NAME: return By.name(using);
-            case CLASS_NAME: return By.className(using);
-            case CSS: return By.cssSelector(using);
-            case XPATH: return By.xpath(using);
-            case LINK_TEXT: return By.linkText(using);
-            case PARTIAL_LINK_TEXT: return By.partialLinkText(using);
-            case TAG_NAME: return By.tagName(using);
-            default: return By.xpath(using);
-        }
-    }
-
-    public static List<By> generateAlternateLocators(FindBy annotation) {
-        How how = resolveHow(annotation);
-        String using = resolveUsing(annotation);
-        List<By> alternatives = new ArrayList<>();
-
-        switch (how) {
-            case ID:
-                alternatives.add(By.name(using));
-                alternatives.add(By.cssSelector("#" + using));
-                alternatives.add(By.xpath("//*[@id='" + using + "']"));
-                alternatives.add(By.cssSelector("input[id='" + using + "']"));
-                alternatives.add(By.xpath("//*[contains(@id,'" + using + "')]"));
-                break;
-
-            case NAME:
-                alternatives.add(By.id(using));
-                alternatives.add(By.cssSelector("[name='" + using + "']"));
-                alternatives.add(By.xpath("//*[@name='" + using + "']"));
-                alternatives.add(By.xpath("//*[contains(@name,'" + using + "')]"));
-                break;
-
-            case CLASS_NAME:
-                alternatives.add(By.cssSelector("." + using));
-                alternatives.add(By.xpath("//*[contains(@class,'" + using + "')]"));
-                break;
-
-            case TAG_NAME:
-                alternatives.add(By.cssSelector(using));
-                alternatives.add(By.xpath("//" + using));
-                alternatives.add(By.xpath("//*[contains(name(),'" + using + "')]"));
-                break;
-
-            case LINK_TEXT:
-                alternatives.add(By.partialLinkText(using));
-                alternatives.add(By.xpath("//a[contains(text(),'" + using + "')]"));
-                break;
-
-            case PARTIAL_LINK_TEXT:
-                alternatives.add(By.linkText(using));
-                alternatives.add(By.xpath("//a[contains(text(),'" + using + "')]"));
-                break;
-
-            case CSS:
-                alternatives.add(By.xpath(toXPath(using)));
-                break;
-
-            case XPATH:
-                // Try as CSS if the XPath is simple
-                if (!using.contains("|") && !using.contains("(")) {
-                    String css = using
-                            .replaceAll("^//", "")
-                            .replaceAll("/", " > ")
-                            .replaceAll("\\[@([^=]+)='([^']+)'\\]", "[$1='$2']")
-                            .replaceAll("\\[contains\\(@([^=]+),'([^']+)'\\)\\]", "[$1*='$2']")
-                            .replaceAll("\\[@([^=]+)='([^']+)'\\]/", "[$1='$2'] > ");
-                    if (!css.isEmpty() && !css.equals(using)) {
-                        alternatives.add(By.cssSelector(css));
-                    }
-                }
-                // Try tag-agnostic version
-                alternatives.add(By.xpath(using.replaceFirst("^//[a-zA-Z0-9]+", "//*")));
-                break;
-        }
-
         return alternatives;
     }
 
-    private static String toXPath(String cssSelector) {
-        return cssSelector
-                .replaceAll("input\\[type='([^']+)'\\]", "//input[@type='$1']")
-                .replaceAll("#([a-zA-Z][\\w-]*)", "//*[@id='$1']")
-                .replaceAll("\\.([a-zA-Z][\\w-]*)", "//*[contains(@class,'$1')]");
+    public static String normalize(String selector) {
+        if (selector == null || selector.trim().isEmpty()) {
+            throw new IllegalArgumentException("Auto-heal selectors must not be blank");
+        }
+        String value = selector.trim();
+        if (value.startsWith("By.xpath:")) {
+            return "xpath=" + value.substring("By.xpath:".length()).trim();
+        }
+        if (value.startsWith("By.cssSelector:")) {
+            return "css=" + value.substring("By.cssSelector:".length()).trim();
+        }
+        if (value.startsWith("By.id:")) {
+            return "css=#" + value.substring("By.id:".length()).trim();
+        }
+        if (value.startsWith("By.name:")) {
+            return "css=[name='" + value.substring("By.name:".length()).trim() + "']";
+        }
+        if (value.startsWith("By.className:")) {
+            return "css=." + value.substring("By.className:".length()).trim();
+        }
+        if (value.startsWith("By.tagName:")) {
+            return "css=" + value.substring("By.tagName:".length()).trim();
+        }
+        if (value.startsWith("By.linkText:")) {
+            return "text=" + value.substring("By.linkText:".length()).trim();
+        }
+        if (value.startsWith("By.partialLinkText:")) {
+            return "text=" + value.substring("By.partialLinkText:".length()).trim();
+        }
+        if (value.startsWith("css=") || value.startsWith("xpath=") || value.startsWith("text=")) {
+            return value;
+        }
+        return value.startsWith("/") || value.startsWith(".//") || value.startsWith("..")
+                ? "xpath=" + value : "css=" + value;
     }
 }

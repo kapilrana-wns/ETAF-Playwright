@@ -1,8 +1,8 @@
 package wns.automation.core.playwright;
 
 import com.aventstack.extentreports.Status;
-import org.openqa.selenium.*;
-import org.openqa.selenium.JavascriptExecutor;
+import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Page;
 import wns.automation.core.ExtentTestManager;
 
 import java.util.ArrayList;
@@ -10,257 +10,164 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class DomSimilarityMatcher {
+public final class DomSimilarityMatcher {
 
     private static final int MATCH_THRESHOLD = 40;
 
-    public static class DomMatchResult {
-        public final WebElement element;
-        public final By matchedBy;
-        public DomMatchResult(WebElement element, By matchedBy) {
-            this.element = element;
-            this.matchedBy = matchedBy;
+    private DomSimilarityMatcher() {
+    }
+
+    public static final class DomMatchResult {
+        public final Locator locator;
+        public final String selector;
+
+        private DomMatchResult(Locator locator, String selector) {
+            this.locator = locator;
+            this.selector = selector;
         }
     }
 
-    public static DomMatchResult findSimilarElement(WebDriver driver, By failedBy,
-                                                  String fieldName, String pageName) {
-        SearchHints hints = parseLocator(failedBy);
+    public static DomMatchResult findSimilarElement(Page page, String failedSelector,
+                                                     String fieldName, String pageName) {
+        SearchHints hints = parseSelector(failedSelector);
         if (hints == null) {
-            System.out.println("[AUTO-HEAL DOM] parseLocator returned null for: " + failedBy);
             return null;
         }
-        System.out.println("[AUTO-HEAL DOM] Parsed hints - id: " + hints.id + ", name: " + hints.name + ", tag: " + hints.tag);
 
-        List<Map<String, String>> candidates = fetchAllElementAttrs(driver);
-        System.out.println("[AUTO-HEAL DOM] Found " + candidates.size() + " candidates in DOM");
-        if (candidates.isEmpty()) return null;
-
+        List<Map<String, String>> candidates = fetchAllElementAttrs(page);
         Map<String, String> bestMatch = null;
         int bestScore = 0;
-
-        for (Map<String, String> attrs : candidates) {
-            int score = scoreElement(attrs, hints);
+        for (Map<String, String> candidate : candidates) {
+            int score = scoreElement(candidate, hints);
             if (score > bestScore) {
                 bestScore = score;
-                bestMatch = attrs;
+                bestMatch = candidate;
             }
         }
-
-        System.out.println("[AUTO-HEAL DOM] Best score: " + bestScore + " (threshold: " + MATCH_THRESHOLD + ")");
-        if (bestMatch != null) {
-            System.out.println("[AUTO-HEAL DOM] Best match - tag: " + bestMatch.get("tag") + ", id: " + bestMatch.get("id") + ", name: " + bestMatch.get("name"));
-        }
-
-        if (bestMatch == null || bestScore < MATCH_THRESHOLD) return null;
-
-        try {
-            String xpath = bestMatch.get("xpath");
-            WebElement element = driver.findElement(By.xpath(xpath));
-            System.out.println();
-            System.out.println("[AUTO-HEAL DOM MATCH]");
-            System.out.println("Element        : " + fieldName);
-            System.out.println("Primary Locator: " + failedBy);
-            System.out.println("Page           : " + pageName);
-            System.out.println("Match Score    : " + bestScore + "%");
-            System.out.println("Matched Tag    : " + bestMatch.get("tag"));
-            System.out.println("Matched ID     : " + bestMatch.get("id"));
-            System.out.println("Matched Name   : " + bestMatch.get("name"));
-
-            String tag = bestMatch.get("tag");
-            String id = bestMatch.get("id");
-            String matchedDetail = tag;
-            if (id != null && !id.isEmpty()) matchedDetail += "#" + id;
-            ExtentTestManager.log(Status.WARNING,
-                    "<span style='color:#E67E22;'>\u26A0 AUTO-HEAL DOM MATCH</span>"
-                    + "<br><b>Element:</b> " + fieldName
-                    + "<br><b>Original:</b> " + failedBy
-                    + "<br><b>Matched:</b> &lt;" + matchedDetail + "&gt;"
-                    + "<br><b>Score:</b> " + bestScore + "%"
-                    + "<br><b>Page:</b> " + pageName);
-
-            AutoHealMetrics.getInstance().recordHeal(
-                    pageName, fieldName, "DOM-Similarity", 0);
-            return new DomMatchResult(element, By.xpath(xpath));
-        } catch (Exception e) {
-            System.out.println("[AUTO-HEAL DOM] Exception in findSimilarElement: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+        if (bestMatch == null || bestScore < MATCH_THRESHOLD) {
             return null;
         }
+
+        String selector = "xpath=" + bestMatch.get("xpath");
+        Locator locator = page.locator(selector);
+        if (locator.count() == 0) {
+            return null;
+        }
+
+        String tag = bestMatch.get("tag");
+        String id = bestMatch.get("id");
+        String matchedDetail = (id == null || id.isEmpty()) ? tag : tag + "#" + id;
+        System.out.println("[AUTO-HEAL DOM MATCH] " + fieldName + " on " + pageName
+                + " matched <" + matchedDetail + "> with score " + bestScore + "%");
+        if (AutoHealConfig.getInstance().isReportEnabled()) {
+            ExtentTestManager.log(Status.WARNING,
+                    "<span style='color:#E67E22;'>AUTO-HEAL DOM MATCH</span>"
+                            + "<br><b>Element:</b> " + fieldName
+                            + "<br><b>Original:</b> " + failedSelector
+                            + "<br><b>Matched:</b> &lt;" + matchedDetail + "&gt;"
+                            + "<br><b>Score:</b> " + bestScore + "%"
+                            + "<br><b>Page:</b> " + pageName);
+        }
+        return new DomMatchResult(locator, selector);
     }
 
-    private static SearchHints parseLocator(By by) {
-        String str = by.toString();
+    private static SearchHints parseSelector(String selector) {
         SearchHints hints = new SearchHints();
-
-        int colon = str.indexOf(':');
-        if (colon < 0) return null;
-        String type = str.substring(0, colon).trim();
-        String value = str.substring(colon + 1).trim();
-
-        switch (type) {
-            case "By.id":
-                hints.id = value;
-                break;
-            case "By.name":
-                hints.name = value;
-                break;
-            case "By.className":
-                hints.cssClass = value;
-                break;
-            case "By.tagName":
-                hints.tag = value;
-                break;
-            case "By.linkText":
-            case "By.partialLinkText":
-                hints.tag = "a";
-                hints.text = value;
-                break;
-            case "By.cssSelector":
-                parseCssSelector(value, hints);
-                break;
-            case "By.xpath":
-                parseXPath(value, hints);
-                break;
-            default:
-                return null;
+        String value = selector;
+        if (value.startsWith("xpath=")) {
+            value = value.substring("xpath=".length());
+            parseXPath(value, hints);
+        } else if (value.startsWith("css=")) {
+            value = value.substring("css=".length());
+            parseCssSelector(value, hints);
+        } else {
+            return null;
         }
-        hints.originalBy = str;
-        return hints;
+        return hints.hasHints() ? hints : null;
     }
 
     private static void parseCssSelector(String css, SearchHints hints) {
-        if (css.matches("^[a-zA-Z]+.*")) {
-            String[] parts = css.split("[\\[.#]");
-            hints.tag = parts[0];
+        if (css.matches("^[a-zA-Z][\\w-]*(?:[.#\\[].*)?$")) {
+            hints.tag = css.replaceFirst("^([a-zA-Z][\\w-]*).*$", "$1");
         }
         if (css.contains("#")) {
-            hints.id = css.replaceAll(".*#([a-zA-Z][\\w-]*).*", "$1");
+            hints.id = css.replaceFirst(".*#([a-zA-Z][\\w-]*).*", "$1");
         }
         if (css.contains(".")) {
-            hints.cssClass = css.replaceAll(".*\\.([a-zA-Z][\\w-]*).*", "$1");
+            hints.cssClass = css.replaceFirst(".*\\.([a-zA-Z][\\w-]*).*", "$1");
         }
-        if (css.contains("type=")) {
-            hints.type = css.replaceAll(".*type='([^']+)'.*", "$1");
-            if (hints.type.equals(css)) hints.type = null;
-        }
-        if (css.contains("name=")) {
-            hints.name = css.replaceAll(".*name='([^']+)'.*", "$1");
-            if (hints.name.equals(css)) hints.name = null;
-        }
-        if (css.contains("placeholder=")) {
-            hints.placeholder = css.replaceAll(".*placeholder='([^']+)'.*", "$1");
-            if (hints.placeholder.equals(css)) hints.placeholder = null;
-        }
+        hints.name = attribute(css, "name");
+        hints.type = attribute(css, "type");
+        hints.placeholder = attribute(css, "placeholder");
+        hints.ariaLabel = attribute(css, "aria-label");
+    }
+
+    private static String attribute(String selector, String name) {
+        String pattern = ".*\\[" + name + "=['\"]([^'\"]+)['\"]\\].*";
+        String value = selector.replaceFirst(pattern, "$1");
+        return value.equals(selector) ? null : value;
     }
 
     private static void parseXPath(String xpath, SearchHints hints) {
-        if (xpath.matches(".*//[a-zA-Z]+\\[.*")) {
-            String tag = xpath.replaceAll(".*//([a-zA-Z]+)\\[.*", "$1");
-            if (!tag.equals(xpath)) hints.tag = tag;
-        } else if (xpath.matches(".*//[a-zA-Z]+")) {
-            hints.tag = xpath.replaceAll(".*//([a-zA-Z]+)", "$1");
-        } else if (xpath.matches(".*//\\*")) {
-            hints.tag = null;
-        }
-
-        if (xpath.contains("@id='")) {
-            hints.id = xpath.replaceAll(".*@id='([^']+)'.*", "$1");
-        } else if (xpath.contains("@id=")) {
-            hints.id = xpath.replaceAll(".*@id=\"([^\"]+)\".*", "$1");
-        }
-
-        if (xpath.contains("@name='")) {
-            hints.name = xpath.replaceAll(".*@name='([^']+)'.*", "$1");
-        } else if (xpath.contains("@name=")) {
-            hints.name = xpath.replaceAll(".*@name=\"([^\"]+)\".*", "$1");
-        }
-
-        if (xpath.contains("contains(text(),'")) {
-            hints.text = xpath.replaceAll(".*contains\\(text\\(\\),'([^']+)'\\).*", "$1");
-        } else if (xpath.contains("text()='")) {
-            hints.text = xpath.replaceAll(".*text\\(\\)='([^']+)'.*", "$1");
-        }
-
-        if (xpath.contains("@class='")) {
-            hints.cssClass = xpath.replaceAll(".*@class='([^']+)'.*", "$1");
-        } else if (xpath.contains("contains(@class,'")) {
-            hints.cssClass = xpath.replaceAll(".*contains\\(@class,'([^']+)'\\).*", "$1");
-        }
-
-        if (xpath.contains("@type='")) {
-            hints.type = xpath.replaceAll(".*@type='([^']+)'.*", "$1");
-        }
-
-        if (xpath.contains("@placeholder='")) {
-            hints.placeholder = xpath.replaceAll(".*@placeholder='([^']+)'.*", "$1");
-        }
-
-        if (xpath.contains("@aria-label='")) {
-            hints.ariaLabel = xpath.replaceAll(".*@aria-label='([^']+)'.*", "$1");
-        }
+        java.util.regex.Matcher tag = java.util.regex.Pattern
+                .compile("^//([a-zA-Z][\\w-]*)").matcher(xpath);
+        if (tag.find()) hints.tag = tag.group(1);
+        hints.id = xpathAttribute(xpath, "id");
+        hints.name = xpathAttribute(xpath, "name");
+        hints.cssClass = xpathAttribute(xpath, "class");
+        hints.type = xpathAttribute(xpath, "type");
+        hints.placeholder = xpathAttribute(xpath, "placeholder");
+        hints.ariaLabel = xpathAttribute(xpath, "aria-label");
+        java.util.regex.Matcher text = java.util.regex.Pattern
+                .compile("(?:contains\\(text\\(\\),|text\\(\\)=)['\"]([^'\"]+)['\"]").matcher(xpath);
+        if (text.find()) hints.text = text.group(1);
     }
 
-    private static List<Map<String, String>> fetchAllElementAttrs(WebDriver driver) {
-        List<Map<String, String>> result = new ArrayList<>();
-        try {
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            String script =
-                "var items = [];" +
-                "var all = document.querySelectorAll('input, select, textarea, button, a, label, li, span, h1, h2, h3, h4, p, td, th, div[role], *[aria-label], *[data-testid]');" +
-                "for (var i = 0; i < all.length; i++) {" +
-                "  var el = all[i];" +
-                "  var tag = el.tagName ? el.tagName.toLowerCase() : '';" +
-                "  var attrs = {};" +
-                "  attrs.tag = tag;" +
-                "  attrs.id = el.id || '';" +
-                "  attrs.name = el.getAttribute('name') || '';" +
-                "  attrs['class'] = el.getAttribute('class') || '';" +
-                "  attrs.type = el.getAttribute('type') || '';" +
-                "  attrs.placeholder = el.getAttribute('placeholder') || '';" +
-                "  attrs['aria-label'] = el.getAttribute('aria-label') || '';" +
-                "  attrs.label = '';" +
-                "  if (el.labels && el.labels.length > 0) {" +
-                "    attrs.label = el.labels[0].textContent.trim();" +
-                "  }" +
-                "  attrs.text = (el.textContent || '').trim();" +
-                "  var xpath = getXPath(el);" +
-                "  attrs.xpath = xpath;" +
-                "  items.push(attrs);" +
-                "}" +
-                "function getXPath(el) {" +
-                "  if (el.id) return '//*[@id=\\\"' + el.id + '\\\"]';" +
-                "  var parts = [];" +
-                "  while (el && el.nodeType === 1) {" +
-                "    var idx = 1;" +
-                "    var sibling = el.previousSibling;" +
-                "    while (sibling) {" +
-                "      if (sibling.nodeType === 1 && sibling.tagName === el.tagName) idx++;" +
-                "      sibling = sibling.previousSibling;" +
-                "    }" +
-                "    parts.unshift(el.tagName.toLowerCase() + '[' + idx + ']');" +
-                "    el = el.parentNode;" +
-                "  }" +
-                "  return '/' + parts.join('/');" +
-                "}" +
-                "return items;";
+    private static String xpathAttribute(String xpath, String name) {
+        java.util.regex.Matcher matcher = java.util.regex.Pattern
+                .compile("@" + name + "\\s*=\\s*['\"]([^'\"]+)['\"]").matcher(xpath);
+        return matcher.find() ? matcher.group(1) : null;
+    }
 
-            Object raw = js.executeScript(script);
-            if (raw instanceof List) {
-                List<Map<String, Object>> rawList = (List<Map<String, Object>>) raw;
-                for (Map<String, Object> item : rawList) {
-                    Map<String, String> attrs = new HashMap<>();
-                    for (Map.Entry<String, Object> entry : item.entrySet()) {
-                        Object val = entry.getValue();
-                        attrs.put(entry.getKey(), val != null ? val.toString() : "");
-                    }
-                    result.add(attrs);
-                }
-            }
-        } catch (Exception e) {
-            System.out.println("[AUTO-HEAL] DOM scan error: " + e.getMessage());
-            e.printStackTrace();
+    private static List<Map<String, String>> fetchAllElementAttrs(Page page) {
+        String script = "() => {"
+                + "const items = [];"
+                + "const all = document.querySelectorAll('input,select,textarea,button,a,label,li,span,h1,h2,h3,h4,p,td,th,[role],[aria-label],[data-testid]');"
+                + "const xpathFor = (el) => {"
+                + "const parts = [];"
+                + "while (el && el.nodeType === 1) {"
+                + "let index = 1, sibling = el.previousElementSibling;"
+                + "while (sibling) { if (sibling.tagName === el.tagName) index++; sibling = sibling.previousElementSibling; }"
+                + "parts.unshift(el.tagName.toLowerCase() + '[' + index + ']'); el = el.parentElement;"
+                + "}"
+                + "return '/' + parts.join('/');"
+                + "};"
+                + "for (const el of all) {"
+                + "items.push({tag:el.tagName.toLowerCase(),id:el.id||'',name:el.getAttribute('name')||'',"
+                + "class:el.getAttribute('class')||'',type:el.getAttribute('type')||'',"
+                + "placeholder:el.getAttribute('placeholder')||'',"
+                + "'aria-label':el.getAttribute('aria-label')||'',"
+                + "label:el.labels&&el.labels.length?el.labels[0].textContent.trim():'',"
+                + "text:(el.textContent||'').trim(),xpath:xpathFor(el)});"
+                + "}"
+                + "return items;"
+                + "}";
+
+        Object result = page.evaluate(script);
+        if (!(result instanceof List<?>)) {
+            return List.of();
         }
-        return result;
+        List<Map<String, String>> candidates = new ArrayList<>();
+        for (Object item : (List<?>) result) {
+            if (!(item instanceof Map<?, ?>)) continue;
+            Map<String, String> attributes = new HashMap<>();
+            for (Map.Entry<?, ?> entry : ((Map<?, ?>) item).entrySet()) {
+                Object value = entry.getValue();
+                attributes.put(String.valueOf(entry.getKey()), value == null ? "" : String.valueOf(value));
+            }
+            candidates.add(attributes);
+        }
+        return candidates;
     }
 
     private static int scoreElement(Map<String, String> attrs, SearchHints hints) {
@@ -269,90 +176,37 @@ public class DomSimilarityMatcher {
 
         if (hints.tag != null) {
             maxScore += 15;
-            if (hints.tag.equalsIgnoreCase(attrs.get("tag"))) {
-                score += 15;
-            }
+            if (hints.tag.equalsIgnoreCase(attrs.get("tag"))) score += 15;
         }
-
-        if (hints.id != null && !hints.id.isEmpty()) {
-            maxScore += 25;
-            String attrId = strVal(attrs.get("id"));
-            if (hints.id.equals(attrId)) score += 25;
-            else if (!attrId.isEmpty() && (attrId.contains(hints.id) || hints.id.contains(attrId))) score += 18;
-        }
-
-        if (hints.name != null && !hints.name.isEmpty()) {
-            maxScore += 20;
-            String attrName = strVal(attrs.get("name"));
-            if (hints.name.equals(attrName)) score += 20;
-            else if (!attrName.isEmpty() && (attrName.contains(hints.name) || hints.name.contains(attrName))) score += 12;
-        }
-
-        if (hints.cssClass != null && !hints.cssClass.isEmpty()) {
-            maxScore += 15;
-            String attrClass = strVal(attrs.get("class"));
-            if (attrClass.contains(hints.cssClass)) score += 15;
-            else {
-                boolean anyPart = false;
-                for (String part : hints.cssClass.split("\\s+")) {
-                    if (attrClass.contains(part)) anyPart = true;
-                }
-                if (anyPart) score += 8;
-            }
-        }
-
-        if (hints.type != null && !hints.type.isEmpty()) {
-            maxScore += 10;
-            String attrType = strVal(attrs.get("type"));
-            if (hints.type.equalsIgnoreCase(attrType)) score += 10;
-        }
-
-        if (hints.text != null && !hints.text.isEmpty()) {
-            maxScore += 15;
-            String attrText = strVal(attrs.get("text"));
-            if (attrText.equals(hints.text)) score += 15;
-            else if (!attrText.isEmpty() && (attrText.contains(hints.text) || hints.text.contains(attrText))) score += 10;
-        }
-
-        if (hints.placeholder != null && !hints.placeholder.isEmpty()) {
-            maxScore += 15;
-            String attrPlaceholder = strVal(attrs.get("placeholder"));
-            if (hints.placeholder.equals(attrPlaceholder)) score += 15;
-            else if (!attrPlaceholder.isEmpty()
-                    && (attrPlaceholder.contains(hints.placeholder) || hints.placeholder.contains(attrPlaceholder))) {
-                score += 8;
-            }
-        }
-
-        if (hints.ariaLabel != null && !hints.ariaLabel.isEmpty()) {
-            maxScore += 15;
-            String attrAria = strVal(attrs.get("aria-label"));
-            if (hints.ariaLabel.equals(attrAria)) score += 15;
-            else if (!attrAria.isEmpty()
-                    && (attrAria.contains(hints.ariaLabel) || hints.ariaLabel.contains(attrAria))) {
-                score += 8;
-            }
-        }
-
-        if (hints.label != null && !hints.label.isEmpty()) {
-            maxScore += 10;
-            String attrLabel = strVal(attrs.get("label"));
-            if (hints.label.equals(attrLabel)) score += 10;
-            else if (!attrLabel.isEmpty()
-                    && (attrLabel.contains(hints.label) || hints.label.contains(attrLabel))) {
-                score += 5;
-            }
-        }
-
-        if (maxScore == 0) return 0;
-        return score * 100 / maxScore;
+        score += scoreAttribute(hints.id, attrs.get("id"), 25, 18);
+        if (hints.id != null) maxScore += 25;
+        score += scoreAttribute(hints.name, attrs.get("name"), 20, 12);
+        if (hints.name != null) maxScore += 20;
+        score += scoreAttribute(hints.cssClass, attrs.get("class"), 15, 8);
+        if (hints.cssClass != null) maxScore += 15;
+        score += scoreAttribute(hints.type, attrs.get("type"), 10, 0);
+        if (hints.type != null) maxScore += 10;
+        score += scoreAttribute(hints.text, attrs.get("text"), 15, 10);
+        if (hints.text != null) maxScore += 15;
+        score += scoreAttribute(hints.placeholder, attrs.get("placeholder"), 15, 8);
+        if (hints.placeholder != null) maxScore += 15;
+        score += scoreAttribute(hints.ariaLabel, attrs.get("aria-label"), 15, 8);
+        if (hints.ariaLabel != null) maxScore += 15;
+        score += scoreAttribute(hints.label, attrs.get("label"), 10, 5);
+        if (hints.label != null) maxScore += 10;
+        return maxScore == 0 ? 0 : score * 100 / maxScore;
     }
 
-    private static String strVal(String s) {
-        return s != null ? s : "";
+    private static int scoreAttribute(String expected, String actual, int exact, int partial) {
+        if (expected == null || expected.isEmpty()) return 0;
+        String value = actual == null ? "" : actual;
+        if (expected.equals(value)) return exact;
+        if (partial > 0 && !value.isEmpty()
+                && (value.contains(expected) || expected.contains(value))) return partial;
+        return 0;
     }
 
-    private static class SearchHints {
+    private static final class SearchHints {
         String tag;
         String id;
         String name;
@@ -362,6 +216,10 @@ public class DomSimilarityMatcher {
         String placeholder;
         String ariaLabel;
         String label;
-        String originalBy;
+
+        boolean hasHints() {
+            return tag != null || id != null || name != null || text != null || cssClass != null
+                    || type != null || placeholder != null || ariaLabel != null;
+        }
     }
 }

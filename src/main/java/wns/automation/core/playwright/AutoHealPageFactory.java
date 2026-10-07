@@ -1,11 +1,13 @@
 package wns.automation.core.playwright;
 
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.support.PageFactory;
+import com.microsoft.playwright.Page;
 
-public class AutoHealPageFactory {
+public final class AutoHealPageFactory {
 
-    public static void initElements(WebDriver driver, Object page) {
-        PageFactory.initElements(new AutoHealFieldDecorator(driver), page);
+    private AutoHealPageFactory() {
+    }
+
+    public static void initElements(Page page, Object pageObject) {
+        new AutoHealFieldDecorator(page).decorate(pageObject);
     }
 }

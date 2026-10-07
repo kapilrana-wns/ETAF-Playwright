@@ -1,7 +1,9 @@
 package wns.automation.core.playwright;
 
-import wns.automation.utilities.TestUtility;
-
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
@@ -10,20 +12,16 @@ public class AutoHealConfig {
     private static AutoHealConfig instance;
     private final Properties props;
 
-    /* Below code is work for Windows OS. */
-        /*   private static final String PROPERTIES_PATH =
-            System.getProperty("user.dir")
-                    + "\\src\\test\\java\\testconfig\\test.properties";*/
-
-    /* KR- Below code is work for Windows, Linux, Jenkins, Azure DevOps Pipelines, GitHub Actions */
-    private static final String PROPERTIES_PATH =
-            Paths.get(System.getProperty("user.dir"), "src", "test", "java", "testconfig", "test.properties")
-                    .toString();
-
     private AutoHealConfig() {
-        this.props = TestUtility.getTestConfig(PROPERTIES_PATH);
-        if (this.props == null) {
-            throw new RuntimeException("[AUTO-HEAL] Could not load " + PROPERTIES_PATH);
+        Path configPath = Paths.get(System.getProperty("user.dir"), "src", "test", "java",
+                "testconfig", "test.properties");
+        this.props = new Properties();
+        if (Files.exists(configPath)) {
+            try (InputStream input = Files.newInputStream(configPath)) {
+                props.load(input);
+            } catch (IOException e) {
+                throw new IllegalStateException("[AUTO-HEAL] Could not load " + configPath, e);
+            }
         }
     }
 
@@ -43,11 +41,7 @@ public class AutoHealConfig {
     }
 
     public int getMaxRetries() {
-        try {
-            return Integer.parseInt(props.getProperty("autoHealMaxRetries", "3"));
-        } catch (NumberFormatException e) {
-            return 3;
-        }
+        return positiveInt("autoHealMaxRetries", 3);
     }
 
     public boolean isReportEnabled() {
@@ -55,18 +49,30 @@ public class AutoHealConfig {
     }
 
     public int getRetryPrimary() {
-        try {
-            return Integer.parseInt(props.getProperty("autoHealRetryPrimary", "2"));
-        } catch (NumberFormatException e) {
-            return 2;
-        }
+        return positiveInt("autoHealRetryPrimary", 2);
     }
 
     public int getWaitTimeout() {
+        String configured = props.getProperty("autoHealWaitTimeout",
+                props.getProperty("webDriverTimeDuraiton", "10"));
+        return parsePositiveInt(configured, 10);
+    }
+
+    public String getProperty(String name, String defaultValue) {
+        return props.getProperty(name, defaultValue);
+    }
+
+    private int positiveInt(String key, int defaultValue) {
+        return parsePositiveInt(props.getProperty(key), defaultValue);
+    }
+
+    private static int parsePositiveInt(String value, int defaultValue) {
+        if (value == null) return defaultValue;
         try {
-            return Integer.parseInt(props.getProperty("webDriverTimeDuraiton", "10"));
+            int parsed = Integer.parseInt(value);
+            return parsed >= 0 ? parsed : defaultValue;
         } catch (NumberFormatException e) {
-            return 10;
+            return defaultValue;
         }
     }
 }

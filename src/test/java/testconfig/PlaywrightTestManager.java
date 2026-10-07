@@ -11,8 +11,11 @@ import wns.automation.core.AllureResultManager;
 import wns.automation.core.playwright.CorePlaywrightTestManager;
 import wns.automation.core.IApplicationActionManager;
 import wns.automation.core.constants.AutomationTool;
+import wns.automation.core.CoreTestManager;
+import wns.automation.core.constants.Browser;
 import wns.automation.core.constants.TestReportType;
 import wns.automation.dataprovider.CustomCSVDataProvider;
+import wns.automation.utilities.TestUtility;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Properties;
@@ -56,6 +59,19 @@ public class PlaywrightTestManager extends CustomCSVDataProvider {
     public void setDriver(ITestContext context) {
 
         props = (Properties) context.getAttribute("props");
+        if (props == null) {
+            props = CoreTestManager.props;
+            context.setAttribute("props", props);
+        }
+        String browserParameter = context.getCurrentXmlTest().getParameter("browser");
+        if (browserParameter != null && !browserParameter.isBlank()) {
+            Browser selectedBrowser = parseBrowser(browserParameter);
+            CoreTestManager.browser = selectedBrowser;
+            props.setProperty("browser", selectedBrowser == Browser.FireFox
+                    ? "Firefox"
+                    : selectedBrowser.name());
+        }
+        TestUtility.configureApplicationMetadata(props, getClass().getName());
 //        testComponents.put("tc", new PlaywrightTestComponents(tm.getDriver(), tm.page));
         try {
 
@@ -64,13 +80,25 @@ public class PlaywrightTestManager extends CustomCSVDataProvider {
             testComponents.put("tc", new PlaywrightTestComponents(tm.getDriver(), tm.page));
 
             tc = (PlaywrightTestComponents) testComponents.get("tc");
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
 
             Assert.fail("Playwright initialization failed : " + e.getMessage());
         }
         tc = (PlaywrightTestComponents) testComponents.get("tc");
     }
+
+    private Browser parseBrowser(String browserName) {
+        return switch (browserName.trim().toLowerCase(java.util.Locale.ROOT)) {
+            case "chrome" -> Browser.Chrome;
+            case "edge" -> Browser.Edge;
+            case "firefox", "fire fox" -> Browser.FireFox;
+            case "chromium" -> Browser.CHROMIUM;
+            default -> throw new IllegalArgumentException(
+                    "Unsupported browser '" + browserName
+                            + "'. Supported browsers: Chrome, Edge, Firefox, Chromium.");
+        };
+    }
+
     /**
      * Create Report Test Object
      */
