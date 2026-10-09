@@ -1090,9 +1090,9 @@
 
                         <div class="section collapsed">
                             <h2 class="section-title" onclick="toggleSection(this)"><i class="fas fa-clipboard-check"></i> Test Result Settings <span class="chevron"><i class="fas fa-chevron-down"></i></span></h2>
-                            <p class="section-desc">Choose between Extent or Allure reporting, set output directories, and customize report file names.</p>
+                            <p class="section-desc">Configure Extent reporting, set output directories, and customize report file names.</p>
                             <div class="form-grid">
-                                <div class="form-group"><label for="testReporter" class="required">Test Reporter</label><select id="testReporter" name="testReporter"><option value="Extent">Extent</option><option value="Allure">Allure</option></select></div>
+                                <div class="form-group"><label for="testReporter" class="required">Test Reporter</label><select id="testReporter" name="testReporter"><option value="Extent">Extent</option></select></div>
                                 <div class="form-group">
                                     <label for="testResultOutputDirectory">Result Output Directory</label>
                                     <div class="dir-input-container">
@@ -1108,22 +1108,15 @@
                                         <button type="button" class="btn-browse" onclick="selectDirectory('testNGReportDir')"><i class="fas fa-folder-open"></i> Browse</button>
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label for="allureTestResultOutputDirectory">Allure Result Dir</label>
-                                    <div class="dir-input-container">
-                                        <input type="text" id="allureTestResultOutputDirectory" name="allureTestResultOutputDirectory" readonly>
-                                        <button type="button" class="btn-browse" onclick="selectDirectory('allureTestResultOutputDirectory')"><i class="fas fa-folder-open"></i> Browse</button>
-                                    </div>
-                                </div>
                             </div>
                         </div>
 
                         <div class="section collapsed">
                             <h2 class="section-title" onclick="toggleSection(this)"><i class="fas fa-rocket"></i> Test Execution <span class="chevron"><i class="fas fa-chevron-down"></i></span></h2>
-                            <p class="section-desc">Set execution mode, Playwright timeout, remote server URL, and test data directory.</p>
+                            <p class="section-desc">Choose local execution or connect to a Playwright WebSocket endpoint. The timeout is applied to actions and navigation.</p>
                             <div class="form-grid">
-                                <div class="form-group"><label for="testExecutionMode" class="required">Execution Mode</label><select id="testExecutionMode" name="testExecutionMode"><option value="Local">Local</option><option value="Remote">Remote</option><option value="Cloud">Cloud</option></select></div>
-                                <div class="form-group"><label for="remoteURL">Remote URL</label><input type="url" id="remoteURL" name="remoteURL"></div>
+                                <div class="form-group"><label for="testExecutionMode" class="required">Execution Mode</label><select id="testExecutionMode" name="testExecutionMode"><option value="Local">Local</option><option value="Remote">Remote</option></select></div>
+                                <div class="form-group"><label for="remoteURL">Playwright WebSocket Endpoint</label><input type="url" id="remoteURL" name="remoteURL" placeholder="ws://host:port/"></div>
                                 <div class="form-group"><label for="playwrightTimeout" class="required">Playwright Timeout (sec)</label><input type="number" id="playwrightTimeout" name="playwrightTimeout"></div>
                                 <div class="form-group"><label for="testDataDirectory">Test Data Directory</label><input type="text" id="testDataDirectory" name="testDataDirectory"></div>
                             </div>
@@ -1251,11 +1244,11 @@
                         </div>
                         <div style="background:rgba(251,146,60,0.06);border:1px solid rgba(251,146,60,0.15);border-radius:var(--radius-md);padding:18px 20px;display:flex;align-items:center;gap:16px;">
                             <div style="width:42px;height:42px;border-radius:10px;background:rgba(251,146,60,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fb923c;"><i class="fas fa-file-alt"></i></div>
-                            <div><div style="font-size:0.75em;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Reporter</div><div style="font-weight:600;margin-top:2px;">Extent + Allure</div></div>
+                            <div><div style="font-size:0.75em;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Reporter</div><div style="font-weight:600;margin-top:2px;">Extent</div></div>
                         </div>
                         <div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:var(--radius-md);padding:18px 20px;display:flex;align-items:center;gap:16px;">
                             <div style="width:42px;height:42px;border-radius:10px;background:rgba(34,197,94,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;color:#4ade80;"><i class="fas fa-cloud"></i></div>
-                            <div><div style="font-size:0.75em;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Execution</div><div style="font-weight:600;margin-top:2px;">Local / Remote / Cloud</div></div>
+                            <div><div style="font-size:0.75em;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Execution</div><div style="font-weight:600;margin-top:2px;">Local / Playwright Remote</div></div>
                         </div>
                     </div>
                     <div class="section">
@@ -1447,7 +1440,7 @@
                                 <div class="feature-grid-howto">
                                     <div class="feature-item"><i class="fas fa-cogs" style="color:#818cf8;"></i><span><strong>Feature Settings</strong> &mdash; toggles for mobile emulator, video recording, email, defect logging</span></div>
                                     <div class="feature-item"><i class="fas fa-globe" style="color:#22d3ee;"></i><span><strong>General Settings</strong> &mdash; URLs, browser, viewport, screenshot preferences</span></div>
-                                    <div class="feature-item"><i class="fas fa-clipboard-check" style="color:#4ade80;"></i><span><strong>Test Result</strong> &mdash; reporter type (Extent / Allure), output directories</span></div>
+                                    <div class="feature-item"><i class="fas fa-clipboard-check" style="color:#4ade80;"></i><span><strong>Test Result</strong> &mdash; Extent reporting and output directories</span></div>
                                     <div class="feature-item"><i class="fas fa-rocket" style="color:#fb923c;"></i><span><strong>Test Execution</strong> &mdash; local/remote/cloud mode, Playwright timeout</span></div>
                                     <div class="feature-item"><i class="fas fa-heartbeat" style="color:#f472b6;"></i><span><strong>Auto-Heal</strong> &mdash; self-healing engine config, retry counts</span></div>
                                     <div class="feature-item"><i class="fas fa-database" style="color:#f87171;"></i><span><strong>Database</strong> &mdash; DBMS connection settings for test data</span></div>

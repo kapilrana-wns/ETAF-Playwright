@@ -61,7 +61,7 @@ function generatePropertiesContent(properties) {
         'Feature Settings': ['mobileEmulator', 'recordVideo', 'sendMailUponTetsCompletion', 'AutoLoggingDefect', 'autoTestResultUpdate'],
         'General Properties': ['ApplicationUrl', 'OrangeHRMUrl', 'browser', 'browserWidth', 'browserHeight', 'takeScreenShotFor', 'mobileEmulatorType', 'videoWidth', 'videoHeight'],
         'Auto-Heal Configuration': ['autoHealEnabled', 'autoHealScreenshot', 'autoHealMaxRetries', 'autoHealReport', 'autoHealRetryPrimary'],
-        'Test Result Settings': ['testReporter', 'testResultOutputDirectory', 'extentResultMainHtmlFileName', 'testNGReportDir', 'allureTestResultOutputDirectory'],
+        'Test Result Settings': ['testReporter', 'testResultOutputDirectory', 'extentResultMainHtmlFileName', 'testNGReportDir'],
         'Test Execution': ['testExecutionMode', 'remoteURL', 'playwrightTimeout', 'testDataDirectory'],
         'Mail Configuration': ['emailSMTPServer', 'emailAddress', 'alertForInitiate'],
         'Database Settings': ['DBMS_TYPE', 'DBMSServerIP', 'DBMSServerPort', 'DatabaseName', 'DBUserName', 'DBPassword'],

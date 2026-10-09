@@ -1,11 +1,9 @@
 package wns.automation.core.playwright;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
+import wns.automation.utilities.TestUtility;
 
 public class AutoHealConfig {
 
@@ -15,14 +13,7 @@ public class AutoHealConfig {
     private AutoHealConfig() {
         Path configPath = Paths.get(System.getProperty("user.dir"), "src", "test", "java",
                 "testconfig", "test.properties");
-        this.props = new Properties();
-        if (Files.exists(configPath)) {
-            try (InputStream input = Files.newInputStream(configPath)) {
-                props.load(input);
-            } catch (IOException e) {
-                throw new IllegalStateException("[AUTO-HEAL] Could not load " + configPath, e);
-            }
-        }
+        this.props = TestUtility.getTestConfig(configPath.toString());
     }
 
     public static synchronized AutoHealConfig getInstance() {
@@ -54,7 +45,8 @@ public class AutoHealConfig {
 
     public int getWaitTimeout() {
         String configured = props.getProperty("autoHealWaitTimeout",
-                props.getProperty("webDriverTimeDuraiton", "10"));
+                props.getProperty("playwrightTimeout",
+                        props.getProperty("webDriverTimeDuraiton", "10")));
         return parsePositiveInt(configured, 10);
     }
 

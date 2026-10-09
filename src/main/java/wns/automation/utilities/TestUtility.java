@@ -62,6 +62,16 @@ public class TestUtility {
         } catch (IOException ex) {
             logger.debug("Unable to load properties file: {}", filename, ex);
         }
+        for (String key : propertySet.stringPropertyNames()) {
+            String environmentValue = System.getenv("ETAF_" + key.toUpperCase(Locale.ROOT));
+            if (environmentValue != null) {
+                propertySet.setProperty(key, environmentValue);
+            }
+        }
+        String playwrightTimeout = System.getenv("ETAF_PLAYWRIGHTTIMEOUT");
+        if (playwrightTimeout != null) {
+            propertySet.setProperty("playwrightTimeout", playwrightTimeout);
+        }
         return propertySet;
     }
 

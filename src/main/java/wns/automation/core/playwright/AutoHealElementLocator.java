@@ -166,6 +166,9 @@ public class AutoHealElementLocator {
         if (lastHealIndex >= 0 && lastHealIndex < selectors.size()) {
             return selectors.get(lastHealIndex);
         }
+        if (lastHealIndex == selectors.size()) {
+            return cachedHealedSelector;
+        }
         return null;
     }
 

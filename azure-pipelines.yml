@@ -42,14 +42,13 @@ steps:
     choco install googlechrome -y
   displayName: 'Install Chrome'
 
-# ✅ DEBUG: Check full repo structure
-- script: dir /s
-  displayName: 'Check all files in repo'
+# Install the Playwright Java browser binaries used by the test suites.
+- script: mvn -q org.codehaus.mojo:exec-maven-plugin:3.5.0:java -Dexec.mainClass=com.microsoft.playwright.CLI -Dexec.args="install chromium firefox"
+  displayName: 'Install Playwright browsers'
 
-# ✅ Run Maven with FULL DEBUG (this prints real error)
-- script: mvn clean test -e -X
-  displayName: 'Run Maven with full debug logs'
-  continueOnError: true   # IMPORTANT → allows next steps to run
+# Keep Maven errors visible without logging the full debug trace.
+- script: mvn clean test -e
+  displayName: 'Run Maven tests'
 
 # ✅ 🔥 PRINT ACTUAL TEST FAILURES (MOST IMPORTANT STEP)
 - script: |
@@ -63,6 +62,7 @@ steps:
         echo "No surefire-reports folder found"
     )
   displayName: 'Print Surefire Failure Logs'
+  condition: succeededOrFailed()
   continueOnError: true
 
 # ✅ Optional: Print XML results (extra visibility)
@@ -75,13 +75,14 @@ steps:
         )
     )
   displayName: 'Print XML Test Results'
+  condition: succeededOrFailed()
   continueOnError: true
 
 # ✅ Publish Test Results (so you see failures in UI)
 - task: PublishTestResults@2
+  condition: succeededOrFailed()
   inputs:
     testResultsFormat: 'JUnit'
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
     failTaskOnFailedTests: false   # don't stop pipeline
-
 

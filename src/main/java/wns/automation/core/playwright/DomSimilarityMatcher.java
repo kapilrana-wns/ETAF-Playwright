@@ -12,7 +12,7 @@ import java.util.Map;
 
 public final class DomSimilarityMatcher {
 
-    private static final int MATCH_THRESHOLD = 40;
+    private static final int MATCH_THRESHOLD = 55;
 
     private DomSimilarityMatcher() {
     }
@@ -83,7 +83,7 @@ public final class DomSimilarityMatcher {
         } else {
             return null;
         }
-        return hints.hasHints() ? hints : null;
+        return hints.hasIdentifyingHints() ? hints : null;
     }
 
     private static void parseCssSelector(String css, SearchHints hints) {
@@ -217,8 +217,8 @@ public final class DomSimilarityMatcher {
         String ariaLabel;
         String label;
 
-        boolean hasHints() {
-            return tag != null || id != null || name != null || text != null || cssClass != null
+        boolean hasIdentifyingHints() {
+            return id != null || name != null || text != null || cssClass != null
                     || type != null || placeholder != null || ariaLabel != null;
         }
     }
