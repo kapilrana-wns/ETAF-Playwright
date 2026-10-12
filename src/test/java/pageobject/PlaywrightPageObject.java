@@ -1,29 +1,35 @@
-package pageobject.Playwright;
+package pageobject;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import wns.automation.core.playwright.AutoHealBy;
+import wns.automation.core.playwright.AutoHealPageFactory;
 
 public class PlaywrightPageObject {
-    private Page page;
-
     // Locators for Login Page
+    @AutoHealBy(value = "input[name='Email']", alternatives = {
+            "input#Email", "input[type='email']"
+    })
     private Locator textUserName;
+    @AutoHealBy(value = "input#Password", alternatives = {
+            "input[name='Password']", "input[type='password']"
+    })
     private Locator textPassword;
+    @AutoHealBy(value = "//input[@class='btn btn-primary']", alternatives = {
+            "input.btn.btn-primary", "input[type='submit']"
+    })
     private Locator btnSubmit;
+    @AutoHealBy(value = "//li[contains(text(),'Invalid login attempt.')]", alternatives = {
+            "text=Invalid login attempt."
+    })
     private Locator textInvalidLoginAttempt;
+    @AutoHealBy(value = "//a[contains(text(),'Log off')]", alternatives = {
+            "text=Log off"
+    })
     private Locator btnLogOff;
 
     public PlaywrightPageObject(Page page) {
-        this.page = page;
-        initElements();
-    }
-
-    private void initElements() {
-        this.textUserName = page.locator("input[name='Email']");
-        this.textPassword = page.locator("input#Password");
-        this.btnSubmit = page.locator("//input[@class='btn btn-primary']");
-        this.textInvalidLoginAttempt = page.locator("//li[contains(text(),'Invalid login attempt.')]");
-        this.btnLogOff = page.locator("//a[contains(text(),'Log off')]");
+        AutoHealPageFactory.initElements(page, this);
     }
 
     // Getter methods for locators

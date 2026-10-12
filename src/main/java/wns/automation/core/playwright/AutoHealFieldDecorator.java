@@ -73,8 +73,7 @@ public class AutoHealFieldDecorator {
         if (fieldType == Locator.class) {
             return locatorProxy(locator, field.getType().getClassLoader());
         }
-        if (List.class.isAssignableFrom(fieldType)
-                && fieldType.isAssignableFrom(AbstractList.class) && isLocatorList(field)) {
+        if (List.class.isAssignableFrom(fieldType) && isLocatorList(field)) {
             return locatorList(locator);
         }
         throw new IllegalArgumentException("@AutoHealBy supports Locator and List<Locator> fields only: "

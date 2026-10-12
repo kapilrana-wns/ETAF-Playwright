@@ -1,4 +1,4 @@
-package testscripts.Playwright;
+package testscripts;
 
 import com.aventstack.extentreports.Status;
 import org.testng.Assert;

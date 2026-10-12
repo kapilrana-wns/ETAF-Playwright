@@ -1,4 +1,4 @@
-package testscripts.Playwright;
+package testscripts;
 
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;

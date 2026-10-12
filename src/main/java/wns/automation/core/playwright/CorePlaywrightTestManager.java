@@ -52,6 +52,15 @@ public class CorePlaywrightTestManager extends CoreTestManager {
                 break;
         }
 
+        if (executionMode != TestExecutionMode.Local && executionMode != TestExecutionMode.Remote) {
+            throw new IllegalArgumentException("Unsupported Playwright execution mode: " + executionMode);
+        }
+        if (executionMode == TestExecutionMode.Remote
+                && (remoteURL == null || !(remoteURL.startsWith("ws://") || remoteURL.startsWith("wss://")))) {
+            throw new IllegalArgumentException(
+                    "Remote mode requires a Playwright WebSocket endpoint using ws:// or wss://.");
+        }
+
         BrowserType.LaunchOptions options = new BrowserType.LaunchOptions().setHeadless(false);
         if (browser == Browser.Edge) {
             options.setChannel("msedge");
@@ -62,8 +71,18 @@ public class CorePlaywrightTestManager extends CoreTestManager {
         } else if (browser == Browser.CHROMIUM) {
             options.setArgs(Arrays.asList("--start-maximized"));
         }
-        launchedBrowser = browserType.launch(options);
+        try {
+            launchedBrowser = executionMode == TestExecutionMode.Remote
+                    ? browserType.connect(remoteURL)
+                    : browserType.launch(options);
+        } catch (RuntimeException ex) {
+            driver.close();
+            driver = null;
+            throw ex;
+        }
         page = launchedBrowser.newPage();
+        page.setDefaultTimeout(waitduration * 1000.0);
+        page.setDefaultNavigationTimeout(waitduration * 1000.0);
         page.setViewportSize(
                 Integer.parseInt(AutoHealConfig.getInstance().getProperty("browserWidth", "1380")),
                 Integer.parseInt(AutoHealConfig.getInstance().getProperty("browserHeight", "1080")));

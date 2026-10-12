@@ -12,8 +12,8 @@
     <!-- Comment out either <test> block to run only one suite -->
     <test name="OrangeHRMTest">
         <classes>
-            <class name="testscripts.Playwright.OHRMLoginTestPW" />
-            <class name="testscripts.Playwright.SMLoginTestPW" />
+            <class name="testscripts.OHRMLoginTestPW" />
+            <class name="testscripts.SMLoginTestPW" />
         </classes>
     </test>
 

@@ -1,17 +1,39 @@
-package testComponents.Playwright;
+package testComponents;
 
 import com.aventstack.extentreports.ExtentTest;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.WaitForSelectorState;
-import pageobject.Playwright.PlaywrightPageObject;
+import pageobject.PlaywrightPageObject;
 import wns.automation.core.IApplicationActionManager;
+import wns.automation.core.playwright.AutoHealBy;
+import wns.automation.core.playwright.AutoHealPageFactory;
 import wns.automation.core.playwright.PlaywrightWebActionManager;
 
 public class PlaywrightTestComponents extends PlaywrightWebActionManager implements  IApplicationActionManager {
 
-    // Every page object should hvae following variables and methods included
+    // Every page object should have following variables and methods included
+
+    @AutoHealBy(value = "input[name='username']", alternatives = {
+            "input[placeholder='Username']", "input[autocomplete='username']"
+    })
+    private Locator orangeHrmUsername;
+
+    @AutoHealBy(value = "input[name='password']", alternatives = {
+            "input[placeholder='Password']", "input[autocomplete='current-password']"
+    })
+    private Locator orangeHrmPassword;
+
+    @AutoHealBy(value = "button[type='submit']", alternatives = {
+            "button.oxd-button--main", "text=Login"
+    })
+    private Locator orangeHrmLoginButton;
+
+    @AutoHealBy(value = "h6.oxd-topbar-header-breadcrumb-module", alternatives = {
+            "h6:has-text('Dashboard')", "text=Dashboard"
+    })
+    private Locator orangeHrmDashboardHeading;
 
     public PlaywrightPageObject pageobject;
     public ExtentTest extentTest;
@@ -19,6 +41,7 @@ public class PlaywrightTestComponents extends PlaywrightWebActionManager impleme
     public PlaywrightTestComponents(Playwright driver, Page page)
     {
         super.setPlaywrightContext(driver, page);
+        AutoHealPageFactory.initElements(super.page, this);
         this.pageobject = new PlaywrightPageObject(super.page);
     }
 
@@ -35,35 +58,34 @@ public class PlaywrightTestComponents extends PlaywrightWebActionManager impleme
     }
 
     public boolean verifyLoginPageDisplayed() {
-        page.locator("input[name='username']")
+        orangeHrmUsername
                 .waitFor(new Locator.WaitForOptions()
                         .setState(WaitForSelectorState.VISIBLE));
-        page.locator("input[name='password']")
+        orangeHrmPassword
                 .waitFor(new Locator.WaitForOptions()
                         .setState(WaitForSelectorState.VISIBLE));
         return true;
     }
 
     public boolean enterUserName(String username) {
-        page.locator("input[name='username']").fill(username);
+        orangeHrmUsername.fill(username);
         return true;
     }
 
     public boolean enterPassword(String password) {
-        page.locator("input[name='password']").fill(password);
+        orangeHrmPassword.fill(password);
         return true;
     }
 
     public boolean clickLoginButton() {
-        page.locator("button[type='submit']").click();
+        orangeHrmLoginButton.click();
         return true;
     }
 
     public boolean verifyDashboardDisplayed() {
-        Locator dashboardHeading = page.locator("h6.oxd-topbar-header-breadcrumb-module");
-        dashboardHeading.waitFor(new Locator.WaitForOptions()
+        orangeHrmDashboardHeading.waitFor(new Locator.WaitForOptions()
                 .setState(WaitForSelectorState.VISIBLE));
-        return "Dashboard".equals(dashboardHeading.textContent().trim());
+        return "Dashboard".equals(orangeHrmDashboardHeading.textContent().trim());
     }
 
     // Default variable and method block ends here

@@ -8,13 +8,13 @@
 
     <!--<test name="OrangeHRMTest">
         <classes>
-            <class name="testscripts.Playwright.OHRMLoginTestPW" />
+            <class name="testscripts.OHRMLoginTestPW" />
         </classes>
     </test>-->
     <test name="OrangeHRMTest">
     <classes>
-        <class name="testscripts.Playwright.OHRMLoginTestPW"/>
-        <class name="testscripts.Playwright.SMLoginTestPW"/>
+        <class name="testscripts.OHRMLoginTestPW"/>
+        <class name="testscripts.SMLoginTestPW"/>
     </classes>
     </test>
 

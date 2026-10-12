@@ -6,8 +6,7 @@ import org.testng.Assert;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
 import org.testng.annotations.*;
-import testComponents.Playwright.PlaywrightTestComponents;
-import wns.automation.core.AllureResultManager;
+import testComponents.PlaywrightTestComponents;
 import wns.automation.core.playwright.CorePlaywrightTestManager;
 import wns.automation.core.IApplicationActionManager;
 import wns.automation.core.constants.AutomationTool;
@@ -48,8 +47,7 @@ public class PlaywrightTestManager extends CustomCSVDataProvider {
             context.setAttribute("AutomationTool", AutomationTool.PLAYWRIGHT);
 
         } catch (Exception ex) {
-
-            System.out.println(ex.getMessage());
+            throw new IllegalStateException("Playwright test suite initialization failed.", ex);
         }
     }
     /**
@@ -151,23 +149,6 @@ public class PlaywrightTestManager extends CustomCSVDataProvider {
         reporter = ((Properties) context.getAttribute("props")).getProperty("testReporter");
 
         configuredReport = TestReportType.valueOf(reporter);
-
-        AllureResultManager allureResultManager = new AllureResultManager();
-
-        try {
-
-           // allureResultManager.saveScreenshotPNG(tc.getDriver());
-            if (tc != null) {
-                allureResultManager.saveScreenshotPNG(
-                        tc.getDriver());
-            }
-
-            allureResultManager.saveTextlog(result.getMethod().getMethodName() + " screenshot");
-
-        } catch (Exception e) {
-
-            System.out.println("Allure Screenshot Error : " + e.getMessage());
-        }
 
         switch (configuredReport) {
 

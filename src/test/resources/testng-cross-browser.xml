@@ -8,24 +8,24 @@
     <test name="Chrome">
         <parameter name="browser" value="Chrome"/>
         <classes>
-            <class name="testscripts.Playwright.OHRMLoginTestPW"/>
-            <class name="testscripts.Playwright.SMLoginTestPW"/>
+            <class name="testscripts.OHRMLoginTestPW"/>
+            <class name="testscripts.SMLoginTestPW"/>
         </classes>
     </test>
 
     <test name="Edge">
         <parameter name="browser" value="Edge"/>
         <classes>
-            <class name="testscripts.Playwright.OHRMLoginTestPW"/>
-            <class name="testscripts.Playwright.SMLoginTestPW"/>
+            <class name="testscripts.OHRMLoginTestPW"/>
+            <class name="testscripts.SMLoginTestPW"/>
         </classes>
     </test>
 
     <test name="Firefox">
         <parameter name="browser" value="Firefox"/>
         <classes>
-            <class name="testscripts.Playwright.OHRMLoginTestPW"/>
-            <class name="testscripts.Playwright.SMLoginTestPW"/>
+            <class name="testscripts.OHRMLoginTestPW"/>
+            <class name="testscripts.SMLoginTestPW"/>
         </classes>
     </test>
 </suite>

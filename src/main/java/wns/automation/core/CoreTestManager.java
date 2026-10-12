@@ -24,7 +24,6 @@ import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
@@ -104,10 +103,7 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
                     screenRecorder.start();
             }
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            System.out.println("Exception in Test Initialization of CoreTestManager");
-            e.printStackTrace();
-
+            throw new IllegalStateException("Test framework initialization failed.", e);
         }
 
 
@@ -198,7 +194,12 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 
     @Override
     public void setupWebDriver() {
-        webDriverWaitDuration = Long.parseLong(props.getProperty("webDriverTimeDuraiton", "10"));
+        String timeout = props.getProperty("playwrightTimeout",
+                props.getProperty("webDriverTimeDuraiton", "10"));
+        webDriverWaitDuration = Long.parseLong(timeout);
+        if (webDriverWaitDuration <= 0) {
+            throw new IllegalArgumentException("playwrightTimeout must be greater than zero.");
+        }
         String remoteUrlStr = remoteURL != null ? remoteURL : "";
         InitializeContext(browser, webDriverWaitDuration, testExecutionMode, remoteUrlStr);
     }
@@ -216,16 +217,15 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
     @Override
     public void setupTestExecutionMode() {
 
-        try {
-            String stringBrowser = props.getProperty("browser");
-            browser = Browser.valueOf(stringBrowser);
-            remoteURL = props.getProperty("remoteURL");
-            String mode = props.getProperty("testExecutionMode");
-            testExecutionMode = (mode != null && !mode.isEmpty())
-                    ? TestExecutionMode.valueOf(mode)
-                    : TestExecutionMode.Local;
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        String stringBrowser = props.getProperty("browser");
+        browser = Browser.valueOf(stringBrowser);
+        remoteURL = props.getProperty("remoteURL");
+        String mode = props.getProperty("testExecutionMode");
+        testExecutionMode = (mode != null && !mode.isBlank())
+                ? TestExecutionMode.valueOf(mode)
+                : TestExecutionMode.Local;
+        if (testExecutionMode != TestExecutionMode.Local && testExecutionMode != TestExecutionMode.Remote) {
+            throw new IllegalArgumentException("Unsupported Playwright execution mode: " + testExecutionMode);
         }
 
     }
@@ -243,11 +243,9 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
             reportDirectpath = testResultDirectory;
             // Setup TestNGReport
             String testNGResultDirectory = props.getProperty("testNGReportDir");
-            String allureResultDirectory = props.getProperty("allureTestResultOutputDirectory");
             File testResultdirectory = new File(String.valueOf(testResultDirectory));
             File testNGDirectory = new File(String.valueOf(testNGResultDirectory));
-            File allureResultDir = new File(String.valueOf(allureResultDirectory));
-            for (File dir : new File[]{testResultdirectory, testNGDirectory, allureResultDir}) {
+            for (File dir : new File[]{testResultdirectory, testNGDirectory}) {
                 if (!dir.exists()) {
                     dir.mkdirs();
                 }
@@ -255,13 +253,12 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 
             FileUtils.cleanDirectory(testResultdirectory);
             FileUtils.cleanDirectory(testNGDirectory);
-            FileUtils.cleanDirectory(allureResultDir);
 
             // TestRunner testNGrunner = (TestRunner) context;
             // testNGrunner.setOutputDirectory(testNGResultDirectory);
 
         } catch (Exception ex) {
-            ex.printStackTrace();
+            throw new IllegalStateException("Unable to prepare test result directories.", ex);
         }
         String reporter = props.getProperty("testReporter");
         TestReportType configuredReport = TestReportType.valueOf(reporter);
@@ -278,10 +275,15 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
                 //setTestResultManager(new AllureResultManager();
                 //setTestResultManager((new AllureResultManager()));
 
-                break;
+                throw new IllegalArgumentException(
+                        "Allure reporting is not configured. Select Extent until Allure support is enabled.");
+            }
+            case Excel: {
+                throw new IllegalArgumentException(
+                        "Excel reporting is not configured. Select Extent until Excel reporting is enabled.");
             }
             default:
-                setTestResultManager(new ExtentResultManager(testResultDirectory + "\\" + testResultFile));
+                throw new IllegalArgumentException("Unsupported test reporter: " + configuredReport);
         }
 
         try {
@@ -336,21 +338,9 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
         src = src + "\\Result.html";
         String des = System.getProperty("user.dir") + "\\Result.html";
         try {
-            String path;
-            File f = new File(".");
-            path = f.getAbsolutePath().replace(".", "");
-
-            Thread.sleep(2000);
             Path src1 = Paths.get(src);
             Path dest1 = Paths.get(des);
             Files.copy(src1, dest1, StandardCopyOption.REPLACE_EXISTING);
-            Thread.sleep(10000);
-            Process process = Runtime.getRuntime().exec("cmd /c allure generate " + path + "allure-results --clean");
-            process.waitFor();
-            Thread.sleep(2500);
-            Process process1 = Runtime.getRuntime().exec("cmd /c allure serve " + path + "allure-results --clean");
-            process1.waitFor(30, TimeUnit.SECONDS);
-            Thread.sleep(2500);
         }
         catch (Exception e) {
             System.out.println(e.getMessage());
