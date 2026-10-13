@@ -232,7 +232,7 @@ public class JiraConnector implements IToolsConnector {
 		for (int i = 0; i < executionCount; i++) {
 			String issueKey = js.get("searchObjectList[" + i + "].issueKey").toString();
 			if (issueKey.equalsIgnoreCase(issuekey)) {
-				executionId = js.get("searchObjectList[" + i + "].execution.id");
+				executionId = js.get("searchObjectList[" + i + "].execution.id").toString();
 				break;
 			}
 

@@ -1,12 +1,10 @@
-@echo off 
-Rem This batch runs the Playwright test suites.
-Rem It takes two parameter, 
-Rem  1.  Provide list of suite xml files separated by comma after -Dsurefire.suiteXmlFiles= parameter
-Rem  2.  Provide the list of test script group that is to be executed after -Dgroups=
-set message=ETAF Batch command file
-echo %message%
-cd\
-Rem replace below directory path from where test automation pom.xml is stored
-cd C:\ProgramData\Jenkins\.jenkins\workspace\SkillMatrix_Testautomation
-Rem Provide suite files names and test group to be executed
-mvn clean test -Dsurefire.suiteXmlFiles=TestNg.xml -Dgroups=Positive
+@echo off
+setlocal
+
+set "SUITE=%~1"
+if not defined SUITE set "SUITE=testng.xml"
+set "GROUPS=%~2"
+if not defined GROUPS set "GROUPS=Positive"
+
+call "%~dp0mavenTestRun.bat" "%SUITE%" "%GROUPS%"
+exit /b %ERRORLEVEL%

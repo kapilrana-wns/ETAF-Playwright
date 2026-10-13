@@ -1,40 +1,30 @@
-mvn clean test -Dsurefire.suiteXmlFiles=TestNg.xml -Dsurefire.includeGroups=Authentication
-mvn clean test -Dsurefire.suiteXmlFiles=TestNg.xml -Dgroups=Negative
--- C:\ProgramData\Jenkins\.jenkins\workspace\SkillMatrix_Testautomation\pom.xml clean test -Dsurefire.suiteXmlFiles=TestNg.xml -Dgroups=Negative
--- Remote Execution
-Jenkin Api key : 111acf22e73815ac6c31aa6facebc71e6a
-: http://localhost:8080/job/SkillMatrix_CodeDeployment/build?token=111acf22e73815ac6c31aa6facebc71e6a
+@echo off
+setlocal
 
-http://localhost:8080/JENKINS_URL/job/SkillMatrix_Testautomation/build?token=TOKEN_NAME 
--------------------
+for %%I in ("%~dp0..\..\..\..\..\..\..") do set "PROJECT_ROOT=%%~fI"
+if not exist "%PROJECT_ROOT%\pom.xml" (
+    echo ERROR: Could not locate pom.xml from "%~dp0".
+    exit /b 2
+)
 
+pushd "%PROJECT_ROOT%" || exit /b 2
 
+set "SUITE=%~1"
+if not defined SUITE set "SUITE=src/test/resources/testng.xml"
+if not exist "%SUITE%" if exist "src\test\resources\%SUITE%" set "SUITE=src/test/resources/%SUITE%"
+if not exist "%SUITE%" (
+    echo ERROR: TestNG suite file not found: "%SUITE%"
+    popd
+    exit /b 2
+)
 
-mvn clean test -DsuiteXMLFile=TestNG.xml
-mvn clean test -DsuiteXMLFile=TestNG.xml -Dgroups=Authentication,Regression
-mvn clean test -D "testngxmlfile" =TestNG.xml -D "groups"= Authentication,Regression
+set "GROUPS=%~2"
+if defined GROUPS (
+    call mvn clean test "-Dsurefire.suiteXmlFiles=%SUITE%" "-Dgroups=%GROUPS%"
+) else (
+    call mvn clean test "-Dsurefire.suiteXmlFiles=%SUITE%"
+)
+set "RESULT=%ERRORLEVEL%"
 
-mvn clean test -DexcludeGroups=TestGroup3,TestGroup4
-mvn clean test -DincludeGroups=TestGroup1,TestGroup2
-mvn test -Dgroups=group1,group2
-mvn clean test -D"testngxmlfile"=SmokeTestNG.xml -D"groups"=logintest,Regression
-
-
-https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html#groups
-https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html
-
-mvn clean test -DsuiteXmlFile=mytestng.xml
-<plugin>
-	<groupId>org.apache.maven.plugins</groupId>
-	<artifactId>maven-surefire-plugin</artifactId>
-	<version>2.19.1</version>
-		<configuration>
-			<suiteXmlFiles>
-				<suiteXmlFile>mytestng.xml</suiteXmlFile>
-			</suiteXmlFiles>
-			<parallel>method</parallel>
-                        <threadCount>2</threadCount
-		</configuration>
-</plugin>
-
-mvn clean test -Dsurefire.suiteXmlFiles=TestNG.xml -DgroupToRun=Authentication
+popd
+exit /b %RESULT%

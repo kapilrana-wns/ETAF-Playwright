@@ -164,7 +164,6 @@ public class ExtentResultManager implements ITestResultManager {
                     if (Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true) {
                         java.util.List<Object> passedParameters =  Arrays.asList(Result.getParameters());
                         if (passedParameters.size() > 0) {
-
                             Object testCaseID = passedParameters.get(passedParameters.size()-1);
                             System.out.println(testCaseID.toString());
                             testManagementToolConnector.addTestsToCycle("project = "
