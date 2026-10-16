@@ -4,13 +4,17 @@ import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.PlaywrightException;
 import com.microsoft.playwright.options.SelectOption;
+import com.aventstack.extentreports.Status;
 import wns.automation.core.IWebActionManager;
 import wns.automation.core.Reporter;
 import wns.automation.core.constants.Browser;
 import wns.automation.core.constants.TestExecutionMode;
 
 public class PlaywrightWebActionManager implements IWebActionManager<Locator> {
+
+    private static final int MAX_NETWORK_CHANGE_RETRIES = 2;
 
     private Playwright driver;
     private com.microsoft.playwright.Browser launchedBrowser;
@@ -86,8 +90,25 @@ public class PlaywrightWebActionManager implements IWebActionManager<Locator> {
 
     @Override
     public void openWebApp(String url) {
-        page.navigate(url);
+        for (int attempt = 0; ; attempt++) {
+            try {
+                page.navigate(url);
+                break;
+            } catch (PlaywrightException ex) {
+                if (!isNetworkChanged(ex) || attempt >= MAX_NETWORK_CHANGE_RETRIES) {
+                    throw ex;
+                }
+                Reporter.log(Status.WARNING,
+                        "Browser network changed during navigation; retrying navigation (attempt "
+                                + (attempt + 2) + " of " + (MAX_NETWORK_CHANGE_RETRIES + 1) + ").");
+            }
+        }
         page.waitForLoadState();
+    }
+
+    private boolean isNetworkChanged(PlaywrightException exception) {
+        return exception.getMessage() != null
+                && exception.getMessage().contains("net::ERR_NETWORK_CHANGED");
     }
 
     @Override

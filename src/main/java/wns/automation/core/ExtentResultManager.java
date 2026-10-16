@@ -1,6 +1,5 @@
 package wns.automation.core;
 
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Properties;
 import com.aventstack.extentreports.MediaEntityBuilder;
@@ -20,13 +19,12 @@ import wns.automation.core.constants.*;
 
 public class ExtentResultManager implements ITestResultManager {
 
-    private static ExtentReports extentReporter;
-    private static ExtentSparkReporter extenthtmlReporter = new ExtentSparkReporter("Spark.html");
-    //private static ExtentHtmlReporter extenthtmlReporter;
+    private final ExtentReports extentReporter;
     private  ExtentTest extentTest;
+    private final ExtentSparkReporter extenthtmlReporter;
     private ScreenShotFor requireScreenShot = ScreenShotFor.ScreenShotNotRequired;
 
-    public static ExtentReports getExtentReporter() {
+    public ExtentReports getExtentReporter() {
         return extentReporter;
     }
 
@@ -35,35 +33,27 @@ public class ExtentResultManager implements ITestResultManager {
         return extentReporter;
     }
 
-    public static void setExtentReporter(ExtentReports extentReporter) {
-        ExtentResultManager.extentReporter = extentReporter;
-    }
-
     public ExtentResultManager(String testResultFileName) {
-        configureExtentObjects(testResultFileName);
-    }
-
-    private void configureExtentObjects(String testResultFileName) {
         extentReporter = new ExtentReports();
         extenthtmlReporter = new ExtentSparkReporter(testResultFileName);
-        //extenthtmlReporter = new ExtentHtmlReporter(testResultFileName);
-        //	extenthtmlReporter.config().setChartVisibilityOnOpen(true);
         extenthtmlReporter.config().setDocumentTitle("Test Result");
         extenthtmlReporter.config().setReportName("DefaultReport");
-        //	extenthtmlReporter.config().setTestViewChartLocation(ChartLocation.TOP);
         extenthtmlReporter.config().setTheme(Theme.DARK);
         extentReporter.attachReporter(extenthtmlReporter);
 
     }
 
-    public void LogResult(ITestResult Result, Object obj) {
+    public synchronized void LogResult(ITestResult Result, Object obj) {
 
         try {
             extentTest = (ExtentTest) obj;
             int testExecutionStatus = Result.getStatus();
 //			extentTest = extentReporter.createTest(
 //					Result.getMethod().getDescription() + " :" + Result.getMethod().getMethodName());
-            Properties props = (Properties) Result.getTestContext().getAttribute("props");
+            Properties props = (Properties) Result.getAttribute("props");
+            if (props == null) {
+                props = (Properties) Result.getTestContext().getAttribute("props");
+            }
             IToolsConnector testManagementToolConnector =
                     (IToolsConnector) Result.getAttribute("testManagementConnector");
             if (testManagementToolConnector == null) {
@@ -77,8 +67,6 @@ public class ExtentResultManager implements ITestResultManager {
             if (testManagementToolConnector == null) {
                 testManagementToolConnector = TestUtility.getTestManagementToolConnector(props);
             }
-
-            Path destination;
 
             switch (testExecutionStatus) {
 
@@ -127,16 +115,15 @@ public class ExtentResultManager implements ITestResultManager {
                     }
 
                     if (Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true) {
-
-                        java.util.List<Object> passedParameters = Arrays.asList(Result.getParameters());
-                        if (passedParameters.size() > 0) {
-                            Object param = passedParameters.get(passedParameters.size() - 1);
-                            System.out.println(testCaseID.toString());
-                            testCaseID = param.toString();
+                        testCaseID = getTestCaseId(Result);
+                        if (!testCaseID.isEmpty()) {
                             testManagementToolConnector.addTestsToCycle("project = "
-                                    + TestUtility.getTestManagementProjectKey(props) + " AND Key =" + param);
-                            testManagementToolConnector.updateTestCaseResult(testCaseID.toString(), testExecutionStatus,
+                                    + TestUtility.getTestManagementProjectKey(props) + " AND Key =" + testCaseID);
+                            testManagementToolConnector.updateTestCaseResult(testCaseID, testExecutionStatus,
                                     "Defect ID :" + defectID);
+                        } else {
+                            System.out.println(
+                                    "Skipping test management result update: no test-case ID was provided.");
                         }
                     }
 
@@ -162,13 +149,14 @@ public class ExtentResultManager implements ITestResultManager {
                     }
 
                     if (Boolean.parseBoolean(props.getProperty("autoTestResultUpdate")) == true) {
-                        java.util.List<Object> passedParameters =  Arrays.asList(Result.getParameters());
-                        if (passedParameters.size() > 0) {
-                            Object testCaseID = passedParameters.get(passedParameters.size()-1);
-                            System.out.println(testCaseID.toString());
+                        String testCaseID = getTestCaseId(Result);
+                        if (!testCaseID.isEmpty()) {
                             testManagementToolConnector.addTestsToCycle("project = "
                                     + TestUtility.getTestManagementProjectKey(props) + " AND Key =" + testCaseID);
-                            testManagementToolConnector.updateTestCaseResult( testCaseID.toString(), testExecutionStatus,"");
+                            testManagementToolConnector.updateTestCaseResult(testCaseID, testExecutionStatus, "");
+                        } else {
+                            System.out.println(
+                                    "Skipping test management result update: no test-case ID was provided.");
                         }
                     }
 
@@ -202,12 +190,31 @@ public class ExtentResultManager implements ITestResultManager {
 
     }
 
+    private String getTestCaseId(ITestResult result) {
+        Object[] parameters = result.getParameters();
+        if (parameters.length == 0) {
+            return "";
+        }
+        Object parameter = parameters[parameters.length - 1];
+        if (parameter instanceof java.util.Map<?, ?> rowData) {
+            for (String key : Arrays.asList(
+                    "TestCaseID", "TestCaseId", "testCaseID", "testCaseId", "JiraKey", "IssueKey")) {
+                Object value = rowData.get(key);
+                if (value != null && !value.toString().isBlank()) {
+                    return value.toString().trim();
+                }
+            }
+            return "";
+        }
+        return parameter == null ? "" : parameter.toString().trim();
+    }
+
     public void takeScreenShotFor(ScreenShotFor screenShotFor) {
         this.requireScreenShot = screenShotFor;
 
     }
 
-    public void CloseReport() {
+    public synchronized void CloseReport() {
         extentReporter.flush();
     }
 

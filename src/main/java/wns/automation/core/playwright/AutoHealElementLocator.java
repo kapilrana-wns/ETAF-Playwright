@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.UUID;
 import java.util.List;
 
 public class AutoHealElementLocator {
@@ -238,7 +239,7 @@ public class AutoHealElementLocator {
         }
         String safeName = pageName.replaceAll("[^a-zA-Z0-9._-]", "_") + "_"
                 + fieldName.replaceAll("[^a-zA-Z0-9._-]", "_") + "_"
-                + System.currentTimeMillis() + ".png";
+                + UUID.randomUUID() + ".png";
         Path directory = Paths.get(System.getProperty("user.dir"), "auto-heal-screenshots");
         Path screenshot = directory.resolve(safeName);
         try {

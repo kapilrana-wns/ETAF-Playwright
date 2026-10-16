@@ -20,7 +20,6 @@ import org.testng.ITestResult;
 import wns.automation.connectors.Tools.AzureDevOpsConnector;
 import wns.automation.connectors.Tools.IToolsConnector;
 import wns.automation.connectors.Tools.JiraConnector;
-import wns.automation.core.CoreTestManager;
 import wns.automation.core.constants.Browser;
 
 import java.io.File;
@@ -104,9 +103,6 @@ public class TestUtility {
     }
 
     private static String getCurrentReportDirectory(Properties properties) {
-        if (CoreTestManager.reportDirectpath != null && !CoreTestManager.reportDirectpath.isBlank()) {
-            return CoreTestManager.reportDirectpath;
-        }
         if (properties != null && properties.getProperty("testResultOutputDirectory") != null) {
             return properties.getProperty("testResultOutputDirectory");
         }
@@ -200,11 +196,15 @@ public class TestUtility {
     }
 
     public static String takeScreenShot(String filename, Page page) {
+        return takeScreenShot(filename, page, props);
+    }
+
+    private static String takeScreenShot(String filename, Page page, Properties properties) {
         if (page == null) {
             return "";
         }
         try {
-            Path directory = Paths.get(getCurrentReportDirectory(props));
+            Path directory = Paths.get(getCurrentReportDirectory(properties));
             Files.createDirectories(directory);
             Path filePath = directory.resolve(filename + "_" + System.currentTimeMillis() + ".png");
             page.screenshot(new Page.ScreenshotOptions().setPath(filePath).setFullPage(true));
@@ -559,7 +559,8 @@ public class TestUtility {
         }
         Object driver = result.getAttribute("driver");
         if (driver instanceof Page page) {
-            return takeScreenShot(result.getName(), page);
+            String className = result.getTestClass().getRealClass().getSimpleName();
+            return takeScreenShot(className + "_" + result.getName(), page, props);
         }
         return "";
     }

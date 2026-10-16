@@ -10,11 +10,10 @@ import testComponents.PlaywrightTestComponents;
 import wns.automation.core.playwright.CorePlaywrightTestManager;
 import wns.automation.core.IApplicationActionManager;
 import wns.automation.core.constants.AutomationTool;
-import wns.automation.core.CoreTestManager;
 import wns.automation.core.constants.Browser;
 import wns.automation.core.constants.TestReportType;
+import wns.automation.core.ExtentTestManager;
 import wns.automation.dataprovider.CustomCSVDataProvider;
-import wns.automation.utilities.TestUtility;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Properties;
@@ -39,37 +38,27 @@ public class PlaywrightTestManager extends CustomCSVDataProvider {
 
     @BeforeSuite(alwaysRun = true)
     public void init(ITestContext context) {
-
         try {
-
-            tm.TestInitialization(context);
-
+            SuiteExecutionState.initialize(context.getSuite(), context, tm);
             context.setAttribute("AutomationTool", AutomationTool.PLAYWRIGHT);
-
         } catch (Exception ex) {
             throw new IllegalStateException("Playwright test suite initialization failed.", ex);
         }
     }
+
     /**
      * Create Driver & Test Components
      */
     @BeforeClass(alwaysRun = true)
     public void setDriver(ITestContext context) {
 
-        props = (Properties) context.getAttribute("props");
-        if (props == null) {
-            props = CoreTestManager.props;
-            context.setAttribute("props", props);
-        }
         String browserParameter = context.getCurrentXmlTest().getParameter("browser");
-        if (browserParameter != null && !browserParameter.isBlank()) {
-            Browser selectedBrowser = parseBrowser(browserParameter);
-            CoreTestManager.browser = selectedBrowser;
-            props.setProperty("browser", selectedBrowser == Browser.FireFox
-                    ? "Firefox"
-                    : selectedBrowser.name());
-        }
-        TestUtility.configureApplicationMetadata(props, getClass().getName());
+        Browser selectedBrowser = browserParameter != null && !browserParameter.isBlank()
+                ? parseBrowser(browserParameter)
+                : null;
+        SuiteExecutionState suiteState = SuiteExecutionState.initialize(context.getSuite(), context, tm);
+        props = suiteState.attachClass(tm, getClass().getName(), selectedBrowser);
+        context.setAttribute("AutomationTool", AutomationTool.PLAYWRIGHT);
 //        testComponents.put("tc", new PlaywrightTestComponents(tm.getDriver(), tm.page));
         try {
 
@@ -105,7 +94,7 @@ public class PlaywrightTestManager extends CustomCSVDataProvider {
             Method method,
             ITestContext context) {
 
-        reporter = ((Properties) context.getAttribute("props")).getProperty("testReporter");
+        reporter = props.getProperty("testReporter");
 
         configuredReport = TestReportType.valueOf(reporter);
 
@@ -128,6 +117,7 @@ public class PlaywrightTestManager extends CustomCSVDataProvider {
                 break;
         }
 
+        ExtentTestManager.setExtentTest(extentTest);
         testComponents.forEach((key, component) -> component.setReportObject(extentTest));
     }
 
@@ -139,37 +129,28 @@ public class PlaywrightTestManager extends CustomCSVDataProvider {
             ITestResult result,
             ITestContext context) {
 
-        /*
-         * Important for Playwright Screenshot Capture
-         */
-        result.setAttribute("driver", tm.page);
+        try {
+            result.setAttribute("driver", tm.page);
+            result.setAttribute("testManagementConnector", tm.getTestManagementToolConnector());
+            result.setAttribute("props", props);
 
-        result.setAttribute("testManagementConnector", tm.getTestManagementToolConnector());
+            reporter = props.getProperty("testReporter");
+            configuredReport = TestReportType.valueOf(reporter);
 
-        reporter = ((Properties) context.getAttribute("props")).getProperty("testReporter");
-
-        configuredReport = TestReportType.valueOf(reporter);
-
-        switch (configuredReport) {
-
-            case Extent:
-
-                //tm.getTestResultManager().LogResult(result, extentTest);
-                if(result.getTestContext() != null) {
+            switch (configuredReport) {
+                case Extent:
+                    if (result.getTestContext() != null) {
+                        tm.getTestResultManager().LogResult(result, extentTest);
+                    }
+                    break;
+                case Allure:
+                    break;
+                default:
                     tm.getTestResultManager().LogResult(result, extentTest);
-                }
-
-                break;
-
-            case Allure:
-
-                break;
-
-            default:
-
-                tm.getTestResultManager().LogResult(result, extentTest);
-
-                break;
+                    break;
+            }
+        } finally {
+            ExtentTestManager.remove();
         }
     }
 
@@ -180,14 +161,7 @@ public class PlaywrightTestManager extends CustomCSVDataProvider {
     public void Cleanup() {
 
         try {
-
-            if (tm.page != null) {
-                tm.page.close();
-            }
-
-            if (tm.getDriver() != null) {
-                tm.getDriver().close();
-            }
+            tm.Cleanup();
 
         } catch (Exception e) {
 
@@ -198,7 +172,7 @@ public class PlaywrightTestManager extends CustomCSVDataProvider {
      * Flush Reports
      */
     @AfterSuite(alwaysRun = true)
-    public void teardown() {
-        tm.teardown();
+    public void teardown(ITestContext context) {
+        SuiteExecutionState.teardown(context.getSuite());
     }
 }

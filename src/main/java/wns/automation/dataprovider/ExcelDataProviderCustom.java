@@ -8,7 +8,6 @@ import org.testng.annotations.DataProvider;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -86,41 +85,43 @@ public class ExcelDataProviderCustom implements Iterator {
     }
 
     public static Map<Integer, Map<String, String>> readExcelSheet(String path, String sheetName){
-        File f = new File(path);
-        FileInputStream is = null;
-        try {
-            is = new FileInputStream(f);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        Workbook book = null;
-        try {
-            book =  getWorkbook(is, path);;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         Map<Integer, Map<String, String>> sheetData = new LinkedHashMap<Integer, Map<String, String>>();
-        Sheet sheet = book.getSheet(sheetName);
-        for(int i=1;i<sheet.getPhysicalNumberOfRows();i++){
-            Row currRow = sheet.getRow(i);
-            if(null == currRow)
-                continue;
-            Map<String, String> rowData = new LinkedHashMap<String, String>();
-            int columnCount = sheet.getRow(0).getLastCellNum();
-            for(int j=0;j<columnCount;j++){
-                String header = sheet.getRow(0).getCell(j).getStringCellValue();
-                String value = "";
-
-                Cell currCell = currRow.getCell(j);
-                if(null != currCell){
-                    currCell.setCellType(CellType.STRING);
-                    value = currCell.getStringCellValue();
-                }
-                rowData.put(header, value);
+        try (FileInputStream inputStream = new FileInputStream(new File(path));
+             Workbook book = getWorkbook(inputStream, path)) {
+            Sheet sheet = book.getSheet(sheetName);
+            if (sheet == null) {
+                throw new IllegalArgumentException(
+                        "Worksheet '" + sheetName + "' was not found in " + path);
             }
-            /// FOR SINGLE ROW DATA ITS SELF (PUT BREAK)
-            sheetData.put(Integer.valueOf(i), rowData);
+            Row headerRow = sheet.getRow(0);
+            if (headerRow == null) {
+                throw new IllegalArgumentException("Worksheet '" + sheetName + "' has no header row: " + path);
+            }
+            int columnCount = headerRow.getLastCellNum();
+            for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
+                Row currentRow = sheet.getRow(i);
+                if (currentRow == null) {
+                    continue;
+                }
+                Map<String, String> rowData = new LinkedHashMap<>();
+                for (int j = 0; j < columnCount; j++) {
+                    Cell headerCell = headerRow.getCell(j);
+                    if (headerCell == null) {
+                        continue;
+                    }
+                    String header = headerCell.getStringCellValue();
+                    Cell currentCell = currentRow.getCell(j);
+                    String value = "";
+                    if (currentCell != null) {
+                        currentCell.setCellType(CellType.STRING);
+                        value = currentCell.getStringCellValue();
+                    }
+                    rowData.put(header, value);
+                }
+                sheetData.put(i, rowData);
+            }
+        } catch (IOException ex) {
+            throw new IllegalStateException("Unable to read Excel test data from " + path, ex);
         }
         return sheetData;
     }

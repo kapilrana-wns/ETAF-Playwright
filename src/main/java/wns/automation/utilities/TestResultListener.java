@@ -12,12 +12,12 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 public class TestResultListener<suiteName> implements ITestListener, ISuiteListener {
 
@@ -39,7 +39,7 @@ public class TestResultListener<suiteName> implements ITestListener, ISuiteListe
     public static final Map<String, String> jiraDefectsByTest = new ConcurrentHashMap<>();
 
     // Accumulates failed+skipped methods across all <test> blocks: Map<className, Set<methodName>>
-    private static final Map<String, Set<String>> allFailedByClass = new LinkedHashMap<>();
+    private static final Map<String, Set<String>> allFailedByClass = new ConcurrentHashMap<>();
 
     @Override
     public void onStart(ISuite suite) {
@@ -69,10 +69,10 @@ public class TestResultListener<suiteName> implements ITestListener, ISuiteListe
                 xml.append("<suite name=\"Failed suite [").append(suiteName).append("]\">\n");
                 xml.append("  <test name=\"Failed Tests (auto-generated)\">\n");
                 xml.append("    <classes>\n");
-                for (Map.Entry<String, Set<String>> entry : allFailedByClass.entrySet()) {
+                for (Map.Entry<String, Set<String>> entry : new TreeMap<>(allFailedByClass).entrySet()) {
                     xml.append("      <class name=\"").append(entry.getKey()).append("\">\n");
                     xml.append("        <methods>\n");
-                    for (String method : entry.getValue()) {
+                    for (String method : new TreeSet<>(entry.getValue())) {
                         xml.append("          <include name=\"").append(method).append("\"/>\n");
                     }
                     xml.append("        </methods>\n");
@@ -85,7 +85,7 @@ public class TestResultListener<suiteName> implements ITestListener, ISuiteListe
                 Path dest = new File(projectDir + File.separator + "src"
                         + File.separator + "test" + File.separator + "resources"
                         + File.separator + "testng-failedcases.xml").toPath();
-                Files.write(dest, xml.toString().getBytes());
+                Files.writeString(dest, xml.toString(), java.nio.charset.StandardCharsets.UTF_8);
                 int count = allFailedByClass.values().stream().mapToInt(Set::size).sum();
                 System.out.println("testng-failedcases.xml updated with " + count
                         + " failed/skipped test(s) from last run.");
@@ -199,12 +199,12 @@ public class TestResultListener<suiteName> implements ITestListener, ISuiteListe
         // Accumulate failed + skipped methods across <test> blocks
         for (ITestResult result : context.getFailedTests().getAllResults()) {
             allFailedByClass
-                .computeIfAbsent(result.getTestClass().getName(), k -> new LinkedHashSet<>())
+            .computeIfAbsent(result.getTestClass().getName(), k -> ConcurrentHashMap.newKeySet())
                 .add(result.getMethod().getMethodName());
         }
         for (ITestResult result : context.getSkippedTests().getAllResults()) {
             allFailedByClass
-                .computeIfAbsent(result.getTestClass().getName(), k -> new LinkedHashSet<>())
+            .computeIfAbsent(result.getTestClass().getName(), k -> ConcurrentHashMap.newKeySet())
                 .add(result.getMethod().getMethodName());
         }
 

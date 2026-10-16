@@ -13,7 +13,6 @@ import java.util.Arrays;
 public class CorePlaywrightTestManager extends CoreTestManager {
 
     protected Playwright driver;
-    public static Browser browser;
     private com.microsoft.playwright.Browser launchedBrowser;
     private BrowserType browserType;
     public Page page;
@@ -36,7 +35,7 @@ public class CorePlaywrightTestManager extends CoreTestManager {
 
     public void InitializeContext(Browser browser, Long waitduration,
                                   TestExecutionMode executionMode, String remoteURL) {
-        CorePlaywrightTestManager.browser = browser;
+        this.browser = browser;
         driver = Playwright.create();
         switch (browser) {
             case FireFox:

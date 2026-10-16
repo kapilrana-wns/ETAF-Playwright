@@ -47,7 +47,7 @@ steps:
   displayName: 'Install Playwright browsers'
 
 # Keep Maven errors visible without logging the full debug trace.
-- script: mvn clean test -e
+- script: mvn clean test -e -Dsurefire.suiteXmlFiles=src/test/resources/testng.xml
   displayName: 'Run Maven tests'
 
 # ✅ 🔥 PRINT ACTUAL TEST FAILURES (MOST IMPORTANT STEP)
@@ -85,4 +85,3 @@ steps:
     testResultsFormat: 'JUnit'
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
     failTaskOnFailedTests: false   # don't stop pipeline
-

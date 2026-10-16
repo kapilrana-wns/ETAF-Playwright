@@ -20,10 +20,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Properties;
+import java.util.UUID;
 
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
@@ -41,7 +41,6 @@ import wns.automation.core.constants.TestManagementTools;
 //import com.nxg.dataprovider.CustomCSVDataProvider;
 import  wns.automation.utilities.TestUtility;
 
-import org.apache.commons.io.FileUtils;
 import org.monte.media.Format;
 import org.monte.media.FormatKeys;
 import org.monte.media.FormatKeys.MediaType;
@@ -49,18 +48,19 @@ import org.monte.media.math.Rational;
 import org.monte.screenrecorder.ScreenRecorder;
 import org.monte.screenrecorder.ScreenRecorder.State;
 import org.testng.ITestContext;
+import org.testng.xml.XmlSuite;
 
 public  abstract class CoreTestManager  implements ITestManagerHelper{
 
-    public static Browser browser;
-    public static TestExecutionMode testExecutionMode;
-    public static String remoteURL;
-    public static String testResultDirectory;
-    public static String testResultFile;
-    public static Properties props;
-    public static long webDriverWaitDuration;
+    public Browser browser;
+    public TestExecutionMode testExecutionMode;
+    public String remoteURL;
+    public String testResultDirectory;
+    public String testResultFile;
+    public Properties props;
+    public long webDriverWaitDuration;
     public ExtentReports extentReporter;
-    public static ITestResultManager testResultManager;
+    public ITestResultManager testResultManager;
     public ExtentTest extentTest;
     protected ScreenRecorder screenRecorder;
     protected  IToolsConnector testManagementToolConnector;
@@ -97,10 +97,14 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
             System.out.println("In Test Initialization of CoreTestManager - Test Management Tool Connector Initialization");
             initializeTestManagementToolConnector(context);
             System.out.println("In Test Initialization of CoreTestManager - Setting up Record Video feature");
-            if (Boolean.parseBoolean(props.getProperty("recordVideo")) == true) {
+            boolean parallelSuite = context.getSuite() != null
+                    && context.getSuite().getXmlSuite().getParallel() != XmlSuite.ParallelMode.NONE;
+            if (Boolean.parseBoolean(props.getProperty("recordVideo")) && !parallelSuite) {
                 getScreenRecorder();
                 if (screenRecorder != null)
                     screenRecorder.start();
+            } else if (parallelSuite && Boolean.parseBoolean(props.getProperty("recordVideo"))) {
+                System.out.println("Screen recording is disabled for parallel suites because it captures the shared desktop.");
             }
         } catch (Exception e) {
             throw new IllegalStateException("Test framework initialization failed.", e);
@@ -204,6 +208,21 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
         InitializeContext(browser, webDriverWaitDuration, testExecutionMode, remoteUrlStr);
     }
 
+    public void attachToSuite(Properties classProperties, ITestResultManager sharedResultManager,
+                              IToolsConnector sharedConnector) {
+        props = classProperties;
+        testResultManager = sharedResultManager;
+        testManagementToolConnector = sharedConnector;
+        setupTestExecutionMode();
+        String timeout = props.getProperty("playwrightTimeout",
+                props.getProperty("webDriverTimeDuraiton", "10"));
+        webDriverWaitDuration = Long.parseLong(timeout);
+        if (webDriverWaitDuration <= 0) {
+            throw new IllegalArgumentException("playwrightTimeout must be greater than zero.");
+        }
+        extentReporter = (ExtentReports) testResultManager.getTestResultManager();
+    }
+
     @Override
     public void setupBrowser() {
         setupWebDriver();
@@ -229,34 +248,23 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
         }
 
     }
-    public static String reportDirectpath = "";
     @Override
     public void setupTestResult() {
-        // setup test result directory
         try {
             Calendar calendar = Calendar.getInstance();
-            SimpleDateFormat formater = new SimpleDateFormat("dd_MM_yyyy_hh_mm_ss");
-
-            testResultDirectory = props.getProperty("testResultOutputDirectory");
+            SimpleDateFormat formatter = new SimpleDateFormat("dd_MM_yyyy_hh_mm_ss_SSS");
+            String configuredOutputDirectory = props.getProperty("testResultOutputDirectory");
             testResultFile = props.getProperty("extentResultMainHtmlFileName");
-            testResultDirectory = testResultDirectory+ "Result_"+formater.format(calendar.getTime());
-            reportDirectpath = testResultDirectory;
-            // Setup TestNGReport
-            String testNGResultDirectory = props.getProperty("testNGReportDir");
-            File testResultdirectory = new File(String.valueOf(testResultDirectory));
-            File testNGDirectory = new File(String.valueOf(testNGResultDirectory));
-            for (File dir : new File[]{testResultdirectory, testNGDirectory}) {
-                if (!dir.exists()) {
-                    dir.mkdirs();
-                }
-            }
-
-            FileUtils.cleanDirectory(testResultdirectory);
-            FileUtils.cleanDirectory(testNGDirectory);
-
-            // TestRunner testNGrunner = (TestRunner) context;
-            // testNGrunner.setOutputDirectory(testNGResultDirectory);
-
+            String runId = formatter.format(calendar.getTime()) + "_" + UUID.randomUUID().toString().substring(0, 8);
+            Path resultDirectory = Paths.get(configuredOutputDirectory, "Result_" + runId)
+                    .toAbsolutePath().normalize();
+            Path testNGDirectory = Paths.get(props.getProperty("testNGReportDir"), "Run_" + runId)
+                    .toAbsolutePath().normalize();
+            Files.createDirectories(resultDirectory);
+            Files.createDirectories(testNGDirectory);
+            testResultDirectory = resultDirectory.toString();
+            props.setProperty("testResultOutputDirectory", testResultDirectory);
+            props.setProperty("testNGReportDir", testNGDirectory.toString());
         } catch (Exception ex) {
             throw new IllegalStateException("Unable to prepare test result directories.", ex);
         }
@@ -265,7 +273,8 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 
         switch (configuredReport) {
             case Extent: {
-                setTestResultManager(new ExtentResultManager(testResultDirectory + "\\" + testResultFile));
+                setTestResultManager(new ExtentResultManager(
+                        Paths.get(testResultDirectory, testResultFile).toString()));
                 extentReporter = (ExtentReports) getTestResultManager().getTestResultManager();
 
                 break;
@@ -298,9 +307,9 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
     public ScreenRecorder getScreenRecorder() {
 
         try {
-            if (Boolean.parseBoolean(props.getProperty("recordVideo")) == true) {
+            if (Boolean.parseBoolean(props.getProperty("recordVideo")) && screenRecorder == null) {
                 try {
-                    File movieFolder = new File(reportDirectpath);
+                    File movieFolder = new File(testResultDirectory);
 
                     screenRecorder = new ScreenRecorder(
                             GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice()
@@ -334,18 +343,6 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
         closeScreenRecorder();
         emailResult();
 
-        String src = CoreTestManager.testResultDirectory;
-        src = src + "\\Result.html";
-        String des = System.getProperty("user.dir") + "\\Result.html";
-        try {
-            Path src1 = Paths.get(src);
-            Path dest1 = Paths.get(des);
-            Files.copy(src1, dest1, StandardCopyOption.REPLACE_EXISTING);
-        }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-
     }
 
     @Override
@@ -363,7 +360,7 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
 
     @Override
     public void closeScreenRecorder() {
-        if (Boolean.parseBoolean(props.getProperty("recordVideo")) == true) {
+        if (Boolean.parseBoolean(props.getProperty("recordVideo")) && screenRecorder != null) {
             try {
                 screenRecorder.stop();
                 while (screenRecorder.getState() != State.DONE) {
