@@ -21,9 +21,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
+import java.util.Date;
 import java.util.Properties;
-import java.util.UUID;
 
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
@@ -251,11 +250,10 @@ public  abstract class CoreTestManager  implements ITestManagerHelper{
     @Override
     public void setupTestResult() {
         try {
-            Calendar calendar = Calendar.getInstance();
-            SimpleDateFormat formatter = new SimpleDateFormat("dd_MM_yyyy_hh_mm_ss_SSS");
+            SimpleDateFormat formatter = new SimpleDateFormat("dd_MM_yyyy_HH_mm_ss");
             String configuredOutputDirectory = props.getProperty("testResultOutputDirectory");
             testResultFile = props.getProperty("extentResultMainHtmlFileName");
-            String runId = formatter.format(calendar.getTime()) + "_" + UUID.randomUUID().toString().substring(0, 8);
+            String runId = formatter.format(new Date());
             Path resultDirectory = Paths.get(configuredOutputDirectory, "Result_" + runId)
                     .toAbsolutePath().normalize();
             Path testNGDirectory = Paths.get(props.getProperty("testNGReportDir"), "Run_" + runId)

@@ -1695,9 +1695,16 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(config)
             })
-            .then(function(response) { return response.json(); })
+            .then(function(response) {
+                return response.json().then(function(result) {
+                    if (!response.ok || !result.success) {
+                        throw new Error(result.error || 'HTTP ' + response.status);
+                    }
+                    return result;
+                });
+            })
             .then(function(result) {
-                showMessage(result.success ? 'Configuration saved!' : 'Error: ' + result.error, result.success ? 'success' : 'error');
+                showMessage(result.message || 'Configuration saved!', 'success');
             })
             .catch(function(error) {
                 showMessage('Error saving configuration: ' + error.message, 'error');
@@ -1727,13 +1734,28 @@
                 signal: abortController.signal
             })
             .then(function(response) {
+                if (!response.ok) throw new Error('HTTP ' + response.status);
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
 
                 function readChunk() {
                     reader.read().then(function(result) {
                         if (result.done) {
-                            status.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e;"></i> Completed';
+                            const outputText = output.textContent;
+                            const exitMatch = outputText.match(/=== Exit code: (-?\d+)(?:\s|$)/);
+                            const testSummaries = Array.from(
+                                outputText.matchAll(/(?:Tests run:\s*|Total tests run:\s*)(\d+)/g),
+                                function(match) { return Number(match[1]); }
+                            );
+                            const testsExecuted = testSummaries.some(function(count) { return count > 0; });
+                            const successful = exitMatch && Number(exitMatch[1]) === 0
+                                && testsExecuted;
+                            status.innerHTML = successful
+                                ? '<i class="fas fa-check-circle" style="color:#22c55e;"></i> Completed'
+                                : '<i class="fas fa-exclamation-circle" style="color:#ef4444;"></i> '
+                                    + (exitMatch && Number(exitMatch[1]) === 0
+                                        ? 'No tests were discovered'
+                                        : 'Test execution failed');
                             runBtn.disabled = false;
                             stopBtn.style.display = 'none';
                             loadReports();

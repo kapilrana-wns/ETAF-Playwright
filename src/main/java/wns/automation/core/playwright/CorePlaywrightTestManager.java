@@ -79,12 +79,14 @@ public class CorePlaywrightTestManager extends CoreTestManager {
             driver = null;
             throw ex;
         }
-        page = launchedBrowser.newPage();
+        //page = launchedBrowser.newPage();
+        page = launchedBrowser
+                .newContext(new com.microsoft.playwright.Browser.NewContextOptions().setViewportSize(null)).newPage();
         page.setDefaultTimeout(waitduration * 1000.0);
         page.setDefaultNavigationTimeout(waitduration * 1000.0);
-        page.setViewportSize(
-                Integer.parseInt(AutoHealConfig.getInstance().getProperty("browserWidth", "1380")),
-                Integer.parseInt(AutoHealConfig.getInstance().getProperty("browserHeight", "1080")));
+        //page.setViewportSize(
+                //Integer.parseInt(AutoHealConfig.getInstance().getProperty("browserWidth", "1380")),
+                //Integer.parseInt(AutoHealConfig.getInstance().getProperty("browserHeight", "1080")));
     }
 
     public void Cleanup() {

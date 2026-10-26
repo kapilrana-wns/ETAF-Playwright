@@ -8,9 +8,7 @@
 
     <test name="SkillMatrixTest">
         <classes>
-            <class name="testscripts.Playwright.SkillMatrixMainCategoryTestPW" />
-            <class name="testscripts.Playwright.SkillMatrixSubCategoryTestPW" />
-            <class name="testscripts.Playwright.SkillMatrixSkillsTestPW" />
+            <class name="testscripts.SMLoginTestPW" />
         </classes>
     </test>
 

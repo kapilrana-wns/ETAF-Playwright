@@ -1,6 +1,7 @@
 package wns.automation.core;
 
 import java.util.Arrays;
+import java.nio.file.Paths;
 import java.util.Properties;
 import com.aventstack.extentreports.MediaEntityBuilder;
 import org.testng.ITestResult;
@@ -80,8 +81,9 @@ public class ExtentResultManager implements ITestResultManager {
                         String screenshotpath=	getScreenShot(Result, props);
                         //extentTest.addScreenCaptureFromPath(screenshotpath);
                         if (screenshotpath != null && !screenshotpath.isEmpty()) {
-                            extentTest.addScreenCaptureFromPath(screenshotpath);
-                            extentTest.fail("Screenshot", MediaEntityBuilder.createScreenCaptureFromPath(screenshotpath).build());
+                            String reportPath = Paths.get(screenshotpath).getFileName().toString();
+                            extentTest.addScreenCaptureFromPath(reportPath);
+                            extentTest.fail("Screenshot", MediaEntityBuilder.createScreenCaptureFromPath(reportPath).build());
                         }
                     }
                     String defectID="";
@@ -144,7 +146,8 @@ public class ExtentResultManager implements ITestResultManager {
                             requireScreenShot.equals(ScreenShotFor.ScreenShotOnlyForPassedCases)) {
                         String screenshotpath=	getScreenShot(Result, props);
                         if (screenshotpath != null && !screenshotpath.isEmpty()) {
-                            extentTest.addScreenCaptureFromPath(screenshotpath);
+                            String reportPath = Paths.get(screenshotpath).getFileName().toString();
+                            extentTest.addScreenCaptureFromPath(reportPath);
                         }
                     }
 

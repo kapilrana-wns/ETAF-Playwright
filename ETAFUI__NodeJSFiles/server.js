@@ -6,7 +6,7 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Add CORS headers
 app.use((req, res, next) => {
@@ -69,6 +69,7 @@ function generatePropertiesContent(properties) {
         'Zephyr Configuration': ['baseURI', 'accessKey', 'secretKey', 'accountId', 'projectId', 'versionId', 'testCycleName', 'cycleDesc', 'jqlQuery', 'apiToken'],
         'Logger Configuration': ['logLevel', 'logFilePath', 'logFileName']
     };
+    const knownKeys = new Set(Object.values(sections).flat());
     for (const [sectionName, keys] of Object.entries(sections)) {
         content += '# ' + sectionName + '\n';
         for (const key of keys) {
@@ -78,7 +79,43 @@ function generatePropertiesContent(properties) {
         }
         content += '\n';
     }
+    const additionalKeys = Object.keys(properties).filter(key => !knownKeys.has(key));
+    if (additionalKeys.length) {
+        content += '# Additional Properties\n';
+        for (const key of additionalKeys) {
+            content += key + '=' + properties[key] + '\n';
+        }
+    }
     return content;
+}
+
+function saveProperties(propertiesFile, updates) {
+    if (!updates || typeof updates !== 'object' || Array.isArray(updates)) {
+        throw new TypeError('Configuration must be a JSON object.');
+    }
+    for (const [key, value] of Object.entries(updates)) {
+        if (!key.trim() || !['string', 'number', 'boolean'].includes(typeof value)) {
+            throw new TypeError('Configuration keys and values must be non-empty keys and scalar values.');
+        }
+    }
+
+    const properties = fs.existsSync(propertiesFile)
+        ? parseProperties(fs.readFileSync(propertiesFile, 'utf8'))
+        : {};
+    Object.assign(properties, updates);
+
+    const content = generatePropertiesContent(properties);
+    const backupFile = propertiesFile + '.backup';
+    if (fs.existsSync(propertiesFile)) {
+        fs.copyFileSync(propertiesFile, backupFile);
+    }
+
+    const dir = path.dirname(propertiesFile);
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(propertiesFile, content, 'utf8');
+    return properties;
 }
 
 app.get('/api/load-config', (req, res) => {
@@ -106,32 +143,59 @@ app.get('/api/load-config', (req, res) => {
 
 app.post('/api/save-config', (req, res) => {
     try {
-        const properties = req.body;
-        console.log('API: Saving config, properties count:', Object.keys(properties).length);
-        
-        const content = generatePropertiesContent(properties);
-        const backupFile = PROPERTIES_FILE + '.backup';
-        
-        if (fs.existsSync(PROPERTIES_FILE)) {
-            fs.copyFileSync(PROPERTIES_FILE, backupFile);
-            console.log('API: Backup created at:', backupFile);
-        }
-        
-        const dir = path.dirname(PROPERTIES_FILE);
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-        
-        fs.writeFileSync(PROPERTIES_FILE, content, 'utf8');
+        const properties = saveProperties(PROPERTIES_FILE, req.body);
+        console.log('API: Saved config, properties count:', Object.keys(properties).length);
         console.log('API: Config saved successfully to:', PROPERTIES_FILE);
         res.json({ success: true, message: 'Configuration saved successfully' });
     } catch (error) {
         console.error('API: Error saving config:', error.message);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(error instanceof TypeError ? 400 : 500)
+            .json({ success: false, error: error.message });
     }
 });
 
 const TEST_RESULT_DIR = path.join(__dirname, '..', 'test_result');
+
+function rewriteReportScreenshotPaths(html, runName, reportRoot = TEST_RESULT_DIR) {
+    const runDirectory = path.resolve(reportRoot, runName);
+    const reportUrl = '/reports/' + encodeURIComponent(runName) + '/';
+    return html.replace(
+        /((?:src|data-featherlight)=["'])([^"']+)(["'])/gi,
+        (match, prefix, source, suffix) => {
+            if (!path.isAbsolute(source)) {
+                return match;
+            }
+            const screenshotPath = path.resolve(source);
+            const relativePath = path.relative(runDirectory, screenshotPath);
+            if (!relativePath || relativePath.startsWith('..') || path.isAbsolute(relativePath)
+                    || !/\.(?:png|jpe?g|gif|webp)$/i.test(relativePath)) {
+                return match;
+            }
+            const webPath = relativePath
+                .split(path.sep)
+                .map(segment => encodeURIComponent(segment))
+                .join('/');
+            return prefix + reportUrl + webPath + suffix;
+        }
+    );
+}
+
+app.get('/reports/:runName/Result.html', (req, res, next) => {
+    const runName = req.params.runName;
+    if (!/^Result_[A-Za-z0-9_-]+$/.test(runName)) {
+        return res.status(404).end();
+    }
+    const reportPath = path.join(TEST_RESULT_DIR, runName, 'Result.html');
+    fs.readFile(reportPath, 'utf8', (error, html) => {
+        if (error) {
+            if (error.code === 'ENOENT') {
+                return res.status(404).end();
+            }
+            return next(error);
+        }
+        res.type('html').send(rewriteReportScreenshotPaths(html, runName));
+    });
+});
 
 app.use('/reports', express.static(TEST_RESULT_DIR));
 
@@ -308,22 +372,22 @@ app.post('/api/run-tests', (req, res) => {
     let args;
     switch (suite) {
         case 'orangehrm':
-            args = ['test', '-Dsurefire.suiteXmlFiles=src\\test\\resources\\testng-orangehrm.xml'];
+            args = ['test', '-Dsurefire.suiteXmlFiles=src/test/resources/testng-orangehrm.xml'];
             break;
         case 'skillmatrix':
-            args = ['test', '-Dsurefire.suiteXmlFiles=src\\test\\resources\\testng-skillmatrix.xml'];
+            args = ['test', '-Dsurefire.suiteXmlFiles=src/test/resources/testng-skillmatrix.xml'];
             break;
         case 'failed':
-            args = ['test', '-Dsurefire.suiteXmlFiles=src\\test\\resources\\testng-failedcases.xml'];
+            args = ['test', '-Dsurefire.suiteXmlFiles=src/test/resources/testng-failedcases.xml'];
             break;
         case 'bdd':
             args = ['test', '-Dtest=bdd.runner.TestRunner'];
             break;
         default:
-            args = ['test', '-Dsurefire.suiteXmlFiles=src\\test\\resources\\testng.xml'];
+            args = ['test', '-Dsurefire.suiteXmlFiles=src/test/resources/testng.xml'];
     }
 
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-cache' });
     res.write('> mvn ' + args.join(' ') + '\n\n');
     const child = spawn('mvn', args, { cwd: projectDir, shell: true });
 
@@ -342,11 +406,23 @@ app.post('/api/run-tests', (req, res) => {
     });
 
     res.on('close', () => {
-        try { child.kill(); } catch (e) { /* ignore */ }
+        if (!res.writableEnded) {
+            child.kill();
+        }
     });
 });
 
-app.listen(PORT, () => {
-    console.log('Server is running on http://localhost:' + PORT);
-    console.log('Open your browser and navigate to http://localhost:' + PORT);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log('Server is running on http://localhost:' + PORT);
+        console.log('Open your browser and navigate to http://localhost:' + PORT);
+    });
+}
+
+module.exports = {
+    app,
+    generatePropertiesContent,
+    parseProperties,
+    rewriteReportScreenshotPaths,
+    saveProperties
+};
